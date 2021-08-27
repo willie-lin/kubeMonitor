@@ -360,6 +360,19 @@ func (f ProcesFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, erro
 	return f(ctx, mv)
 }
 
+// The ProcessFunc type is an adapter to allow the use of ordinary
+// function as Process mutator.
+type ProcessFunc func(context.Context, *ent.ProcessMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f ProcessFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.ProcessMutation)
+	if !ok {
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ProcessMutation", m)
+	}
+	return f(ctx, mv)
+}
+
 // The SettingFunc type is an adapter to allow the use of ordinary
 // function as Setting mutator.
 type SettingFunc func(context.Context, *ent.SettingMutation) (ent.Value, error)

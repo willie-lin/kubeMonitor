@@ -32,6 +32,7 @@ import (
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/metrictype"
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/node"
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/proces"
+	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/process"
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/schema"
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/setting"
 )
@@ -779,6 +780,27 @@ func init() {
 	proces.DefaultDeletedAt = procesDescDeletedAt.Default.(func() time.Time)
 	// proces.UpdateDefaultDeletedAt holds the default value on update for the deleted_at field.
 	proces.UpdateDefaultDeletedAt = procesDescDeletedAt.UpdateDefault.(func() time.Time)
+	processMixin := schema.Process{}.Mixin()
+	processMixinFields0 := processMixin[0].Fields()
+	_ = processMixinFields0
+	processFields := schema.Process{}.Fields()
+	_ = processFields
+	// processDescCreatedAt is the schema descriptor for created_at field.
+	processDescCreatedAt := processMixinFields0[0].Descriptor()
+	// process.DefaultCreatedAt holds the default value on creation for the created_at field.
+	process.DefaultCreatedAt = processDescCreatedAt.Default.(func() time.Time)
+	// processDescUpdatedAt is the schema descriptor for updated_at field.
+	processDescUpdatedAt := processMixinFields0[1].Descriptor()
+	// process.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	process.DefaultUpdatedAt = processDescUpdatedAt.Default.(func() time.Time)
+	// process.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	process.UpdateDefaultUpdatedAt = processDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// processDescDeletedAt is the schema descriptor for deleted_at field.
+	processDescDeletedAt := processMixinFields0[2].Descriptor()
+	// process.DefaultDeletedAt holds the default value on creation for the deleted_at field.
+	process.DefaultDeletedAt = processDescDeletedAt.Default.(func() time.Time)
+	// process.UpdateDefaultDeletedAt holds the default value on update for the deleted_at field.
+	process.UpdateDefaultDeletedAt = processDescDeletedAt.UpdateDefault.(func() time.Time)
 	settingMixin := schema.Setting{}.Mixin()
 	settingMixinFields0 := settingMixin[0].Fields()
 	_ = settingMixinFields0

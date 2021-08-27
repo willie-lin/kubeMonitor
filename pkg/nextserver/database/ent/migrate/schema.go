@@ -679,6 +679,33 @@ var (
 			},
 		},
 	}
+	// ProcessesColumns holds the columns for the "processes" table.
+	ProcessesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUint, Increment: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "deleted_at", Type: field.TypeTime},
+		{Name: "name", Type: field.TypeString},
+		{Name: "p_id", Type: field.TypeInt32},
+		{Name: "cmd", Type: field.TypeString},
+		{Name: "info", Type: field.TypeJSON},
+		{Name: "cluster_id", Type: field.TypeString},
+		{Name: "node_id", Type: field.TypeString},
+		{Name: "container_id", Type: field.TypeString},
+	}
+	// ProcessesTable holds the schema information for the "processes" table.
+	ProcessesTable = &schema.Table{
+		Name:       "processes",
+		Columns:    ProcessesColumns,
+		PrimaryKey: []*schema.Column{ProcessesColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "process_cluster_id_node_id_container_id",
+				Unique:  false,
+				Columns: []*schema.Column{ProcessesColumns[8], ProcessesColumns[9], ProcessesColumns[10]},
+			},
+		},
+	}
 	// SettingsColumns holds the columns for the "settings" table.
 	SettingsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUint, Increment: true},
@@ -730,6 +757,7 @@ var (
 		MetricTypesTable,
 		NodesTable,
 		ProcessTable,
+		ProcessesTable,
 		SettingsTable,
 	}
 )
@@ -828,6 +856,9 @@ func init() {
 	ProcessTable.ForeignKeys[1].RefTable = NodesTable
 	ProcessTable.Annotation = &entsql.Annotation{
 		Table: "process",
+	}
+	ProcessesTable.Annotation = &entsql.Annotation{
+		Table: "processes",
 	}
 	SettingsTable.Annotation = &entsql.Annotation{
 		Table: "settings",

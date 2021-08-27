@@ -24,7 +24,6 @@ type ProcessQuery struct {
 	order      []OrderFunc
 	fields     []string
 	predicates []predicate.Process
-	withFKs    bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -311,13 +310,9 @@ func (pq *ProcessQuery) prepareQuery(ctx context.Context) error {
 
 func (pq *ProcessQuery) sqlAll(ctx context.Context) ([]*Process, error) {
 	var (
-		nodes   = []*Process{}
-		withFKs = pq.withFKs
-		_spec   = pq.querySpec()
+		nodes = []*Process{}
+		_spec = pq.querySpec()
 	)
-	if withFKs {
-		_spec.Node.Columns = append(_spec.Node.Columns, process.ForeignKeys...)
-	}
 	_spec.ScanValues = func(columns []string) ([]interface{}, error) {
 		node := &Process{config: pq.config}
 		nodes = append(nodes, node)

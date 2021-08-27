@@ -66,6 +66,8 @@ type Tx struct {
 	Node *NodeClient
 	// Proces is the client for interacting with the Proces builders.
 	Proces *ProcesClient
+	// Process is the client for interacting with the Process builders.
+	Process *ProcessClient
 	// Setting is the client for interacting with the Setting builders.
 	Setting *SettingClient
 
@@ -230,6 +232,7 @@ func (tx *Tx) init() {
 	tx.MetricType = NewMetricTypeClient(tx.config)
 	tx.Node = NewNodeClient(tx.config)
 	tx.Proces = NewProcesClient(tx.config)
+	tx.Process = NewProcessClient(tx.config)
 	tx.Setting = NewSettingClient(tx.config)
 }
 

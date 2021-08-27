@@ -36,9 +36,7 @@ type Process struct {
 	// NodeId holds the value of the "nodeId" field.
 	NodeId string `json:"nodeId,omitempty"`
 	// ContainerId holds the value of the "containerId" field.
-	ContainerId         string `json:"containerId,omitempty"`
-	container_processes *uint
-	node_processes      *uint
+	ContainerId string `json:"containerId,omitempty"`
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -54,10 +52,6 @@ func (*Process) scanValues(columns []string) ([]interface{}, error) {
 			values[i] = new(sql.NullString)
 		case process.FieldCreatedAt, process.FieldUpdatedAt, process.FieldDeletedAt:
 			values[i] = new(sql.NullTime)
-		case process.ForeignKeys[0]: // container_processes
-			values[i] = new(sql.NullInt64)
-		case process.ForeignKeys[1]: // node_processes
-			values[i] = new(sql.NullInt64)
 		default:
 			return nil, fmt.Errorf("unexpected column %q for type Process", columns[i])
 		}
@@ -140,20 +134,6 @@ func (pr *Process) assignValues(columns []string, values []interface{}) error {
 				return fmt.Errorf("unexpected type %T for field containerId", values[i])
 			} else if value.Valid {
 				pr.ContainerId = value.String
-			}
-		case process.ForeignKeys[0]:
-			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for edge-field container_processes", value)
-			} else if value.Valid {
-				pr.container_processes = new(uint)
-				*pr.container_processes = uint(value.Int64)
-			}
-		case process.ForeignKeys[1]:
-			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for edge-field node_processes", value)
-			} else if value.Valid {
-				pr.node_processes = new(uint)
-				*pr.node_processes = uint(value.Int64)
 			}
 		}
 	}

@@ -36,6 +36,7 @@ import (
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/metrictype"
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/node"
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/proces"
+	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/process"
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/setting"
 
 	"entgo.io/ent/dialect"
@@ -102,6 +103,8 @@ type Client struct {
 	Node *NodeClient
 	// Proces is the client for interacting with the Proces builders.
 	Proces *ProcesClient
+	// Process is the client for interacting with the Process builders.
+	Process *ProcessClient
 	// Setting is the client for interacting with the Setting builders.
 	Setting *SettingClient
 }
@@ -144,6 +147,7 @@ func (c *Client) init() {
 	c.MetricType = NewMetricTypeClient(c.config)
 	c.Node = NewNodeClient(c.config)
 	c.Proces = NewProcesClient(c.config)
+	c.Process = NewProcessClient(c.config)
 	c.Setting = NewSettingClient(c.config)
 }
 
@@ -205,6 +209,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		MetricType:        NewMetricTypeClient(cfg),
 		Node:              NewNodeClient(cfg),
 		Proces:            NewProcesClient(cfg),
+		Process:           NewProcessClient(cfg),
 		Setting:           NewSettingClient(cfg),
 	}, nil
 }
@@ -251,6 +256,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		MetricType:        NewMetricTypeClient(cfg),
 		Node:              NewNodeClient(cfg),
 		Proces:            NewProcesClient(cfg),
+		Process:           NewProcessClient(cfg),
 		Setting:           NewSettingClient(cfg),
 	}, nil
 }
@@ -308,6 +314,7 @@ func (c *Client) Use(hooks ...Hook) {
 	c.MetricType.Use(hooks...)
 	c.Node.Use(hooks...)
 	c.Proces.Use(hooks...)
+	c.Process.Use(hooks...)
 	c.Setting.Use(hooks...)
 }
 
@@ -2947,6 +2954,96 @@ func (c *ProcesClient) GetX(ctx context.Context, id uint) *Proces {
 // Hooks returns the client hooks.
 func (c *ProcesClient) Hooks() []Hook {
 	return c.hooks.Proces
+}
+
+// ProcessClient is a client for the Process schema.
+type ProcessClient struct {
+	config
+}
+
+// NewProcessClient returns a client for the Process from the given config.
+func NewProcessClient(c config) *ProcessClient {
+	return &ProcessClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `process.Hooks(f(g(h())))`.
+func (c *ProcessClient) Use(hooks ...Hook) {
+	c.hooks.Process = append(c.hooks.Process, hooks...)
+}
+
+// Create returns a create builder for Process.
+func (c *ProcessClient) Create() *ProcessCreate {
+	mutation := newProcessMutation(c.config, OpCreate)
+	return &ProcessCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Process entities.
+func (c *ProcessClient) CreateBulk(builders ...*ProcessCreate) *ProcessCreateBulk {
+	return &ProcessCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Process.
+func (c *ProcessClient) Update() *ProcessUpdate {
+	mutation := newProcessMutation(c.config, OpUpdate)
+	return &ProcessUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *ProcessClient) UpdateOne(pr *Process) *ProcessUpdateOne {
+	mutation := newProcessMutation(c.config, OpUpdateOne, withProcess(pr))
+	return &ProcessUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *ProcessClient) UpdateOneID(id uint) *ProcessUpdateOne {
+	mutation := newProcessMutation(c.config, OpUpdateOne, withProcessID(id))
+	return &ProcessUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Process.
+func (c *ProcessClient) Delete() *ProcessDelete {
+	mutation := newProcessMutation(c.config, OpDelete)
+	return &ProcessDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a delete builder for the given entity.
+func (c *ProcessClient) DeleteOne(pr *Process) *ProcessDeleteOne {
+	return c.DeleteOneID(pr.ID)
+}
+
+// DeleteOneID returns a delete builder for the given id.
+func (c *ProcessClient) DeleteOneID(id uint) *ProcessDeleteOne {
+	builder := c.Delete().Where(process.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &ProcessDeleteOne{builder}
+}
+
+// Query returns a query builder for Process.
+func (c *ProcessClient) Query() *ProcessQuery {
+	return &ProcessQuery{
+		config: c.config,
+	}
+}
+
+// Get returns a Process entity by its id.
+func (c *ProcessClient) Get(ctx context.Context, id uint) (*Process, error) {
+	return c.Query().Where(process.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *ProcessClient) GetX(ctx context.Context, id uint) *Process {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *ProcessClient) Hooks() []Hook {
+	return c.hooks.Process
 }
 
 // SettingClient is a client for the Setting schema.

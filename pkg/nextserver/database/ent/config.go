@@ -51,6 +51,7 @@ type hooks struct {
 	MetricType        []ent.Hook
 	Node              []ent.Hook
 	Proces            []ent.Hook
+	Process           []ent.Hook
 	Setting           []ent.Hook
 }
 

@@ -36,6 +36,7 @@ import (
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/node"
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/predicate"
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/proces"
+	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/process"
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/setting"
 
 	"entgo.io/ent"
@@ -77,6 +78,7 @@ const (
 	TypeMetricType        = "MetricType"
 	TypeNode              = "Node"
 	TypeProces            = "Proces"
+	TypeProcess           = "Process"
 	TypeSetting           = "Setting"
 )
 
@@ -22834,6 +22836,826 @@ func (m *ProcesMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *ProcesMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown Proces edge %s", name)
+}
+
+// ProcessMutation represents an operation that mutates the Process nodes in the graph.
+type ProcessMutation struct {
+	config
+	op            Op
+	typ           string
+	id            *uint
+	created_at    *time.Time
+	updated_at    *time.Time
+	deleted_at    *time.Time
+	name          *string
+	pId           *int32
+	addpId        *int32
+	cmd           *string
+	info          *[]string
+	clusterId     *string
+	nodeId        *string
+	containerId   *string
+	clearedFields map[string]struct{}
+	done          bool
+	oldValue      func(context.Context) (*Process, error)
+	predicates    []predicate.Process
+}
+
+var _ ent.Mutation = (*ProcessMutation)(nil)
+
+// processOption allows management of the mutation configuration using functional options.
+type processOption func(*ProcessMutation)
+
+// newProcessMutation creates new mutation for the Process entity.
+func newProcessMutation(c config, op Op, opts ...processOption) *ProcessMutation {
+	m := &ProcessMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeProcess,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withProcessID sets the ID field of the mutation.
+func withProcessID(id uint) processOption {
+	return func(m *ProcessMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *Process
+		)
+		m.oldValue = func(ctx context.Context) (*Process, error) {
+			once.Do(func() {
+				if m.done {
+					err = fmt.Errorf("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().Process.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withProcess sets the old Process of the mutation.
+func withProcess(node *Process) processOption {
+	return func(m *ProcessMutation) {
+		m.oldValue = func(context.Context) (*Process, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m ProcessMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m ProcessMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, fmt.Errorf("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of Process entities.
+func (m *ProcessMutation) SetID(id uint) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *ProcessMutation) ID() (id uint, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *ProcessMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *ProcessMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the Process entity.
+// If the Process object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProcessMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, fmt.Errorf("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, fmt.Errorf("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *ProcessMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *ProcessMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *ProcessMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the Process entity.
+// If the Process object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProcessMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, fmt.Errorf("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, fmt.Errorf("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *ProcessMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetDeletedAt sets the "deleted_at" field.
+func (m *ProcessMutation) SetDeletedAt(t time.Time) {
+	m.deleted_at = &t
+}
+
+// DeletedAt returns the value of the "deleted_at" field in the mutation.
+func (m *ProcessMutation) DeletedAt() (r time.Time, exists bool) {
+	v := m.deleted_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDeletedAt returns the old "deleted_at" field's value of the Process entity.
+// If the Process object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProcessMutation) OldDeletedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, fmt.Errorf("OldDeletedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, fmt.Errorf("OldDeletedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDeletedAt: %w", err)
+	}
+	return oldValue.DeletedAt, nil
+}
+
+// ResetDeletedAt resets all changes to the "deleted_at" field.
+func (m *ProcessMutation) ResetDeletedAt() {
+	m.deleted_at = nil
+}
+
+// SetName sets the "name" field.
+func (m *ProcessMutation) SetName(s string) {
+	m.name = &s
+}
+
+// Name returns the value of the "name" field in the mutation.
+func (m *ProcessMutation) Name() (r string, exists bool) {
+	v := m.name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldName returns the old "name" field's value of the Process entity.
+// If the Process object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProcessMutation) OldName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, fmt.Errorf("OldName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, fmt.Errorf("OldName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldName: %w", err)
+	}
+	return oldValue.Name, nil
+}
+
+// ResetName resets all changes to the "name" field.
+func (m *ProcessMutation) ResetName() {
+	m.name = nil
+}
+
+// SetPId sets the "pId" field.
+func (m *ProcessMutation) SetPId(i int32) {
+	m.pId = &i
+	m.addpId = nil
+}
+
+// PId returns the value of the "pId" field in the mutation.
+func (m *ProcessMutation) PId() (r int32, exists bool) {
+	v := m.pId
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPId returns the old "pId" field's value of the Process entity.
+// If the Process object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProcessMutation) OldPId(ctx context.Context) (v int32, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, fmt.Errorf("OldPId is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, fmt.Errorf("OldPId requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPId: %w", err)
+	}
+	return oldValue.PId, nil
+}
+
+// AddPId adds i to the "pId" field.
+func (m *ProcessMutation) AddPId(i int32) {
+	if m.addpId != nil {
+		*m.addpId += i
+	} else {
+		m.addpId = &i
+	}
+}
+
+// AddedPId returns the value that was added to the "pId" field in this mutation.
+func (m *ProcessMutation) AddedPId() (r int32, exists bool) {
+	v := m.addpId
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetPId resets all changes to the "pId" field.
+func (m *ProcessMutation) ResetPId() {
+	m.pId = nil
+	m.addpId = nil
+}
+
+// SetCmd sets the "cmd" field.
+func (m *ProcessMutation) SetCmd(s string) {
+	m.cmd = &s
+}
+
+// Cmd returns the value of the "cmd" field in the mutation.
+func (m *ProcessMutation) Cmd() (r string, exists bool) {
+	v := m.cmd
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCmd returns the old "cmd" field's value of the Process entity.
+// If the Process object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProcessMutation) OldCmd(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, fmt.Errorf("OldCmd is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, fmt.Errorf("OldCmd requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCmd: %w", err)
+	}
+	return oldValue.Cmd, nil
+}
+
+// ResetCmd resets all changes to the "cmd" field.
+func (m *ProcessMutation) ResetCmd() {
+	m.cmd = nil
+}
+
+// SetInfo sets the "info" field.
+func (m *ProcessMutation) SetInfo(s []string) {
+	m.info = &s
+}
+
+// Info returns the value of the "info" field in the mutation.
+func (m *ProcessMutation) Info() (r []string, exists bool) {
+	v := m.info
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldInfo returns the old "info" field's value of the Process entity.
+// If the Process object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProcessMutation) OldInfo(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, fmt.Errorf("OldInfo is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, fmt.Errorf("OldInfo requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldInfo: %w", err)
+	}
+	return oldValue.Info, nil
+}
+
+// ResetInfo resets all changes to the "info" field.
+func (m *ProcessMutation) ResetInfo() {
+	m.info = nil
+}
+
+// SetClusterId sets the "clusterId" field.
+func (m *ProcessMutation) SetClusterId(s string) {
+	m.clusterId = &s
+}
+
+// ClusterId returns the value of the "clusterId" field in the mutation.
+func (m *ProcessMutation) ClusterId() (r string, exists bool) {
+	v := m.clusterId
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldClusterId returns the old "clusterId" field's value of the Process entity.
+// If the Process object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProcessMutation) OldClusterId(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, fmt.Errorf("OldClusterId is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, fmt.Errorf("OldClusterId requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldClusterId: %w", err)
+	}
+	return oldValue.ClusterId, nil
+}
+
+// ResetClusterId resets all changes to the "clusterId" field.
+func (m *ProcessMutation) ResetClusterId() {
+	m.clusterId = nil
+}
+
+// SetNodeId sets the "nodeId" field.
+func (m *ProcessMutation) SetNodeId(s string) {
+	m.nodeId = &s
+}
+
+// NodeId returns the value of the "nodeId" field in the mutation.
+func (m *ProcessMutation) NodeId() (r string, exists bool) {
+	v := m.nodeId
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNodeId returns the old "nodeId" field's value of the Process entity.
+// If the Process object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProcessMutation) OldNodeId(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, fmt.Errorf("OldNodeId is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, fmt.Errorf("OldNodeId requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNodeId: %w", err)
+	}
+	return oldValue.NodeId, nil
+}
+
+// ResetNodeId resets all changes to the "nodeId" field.
+func (m *ProcessMutation) ResetNodeId() {
+	m.nodeId = nil
+}
+
+// SetContainerId sets the "containerId" field.
+func (m *ProcessMutation) SetContainerId(s string) {
+	m.containerId = &s
+}
+
+// ContainerId returns the value of the "containerId" field in the mutation.
+func (m *ProcessMutation) ContainerId() (r string, exists bool) {
+	v := m.containerId
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldContainerId returns the old "containerId" field's value of the Process entity.
+// If the Process object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ProcessMutation) OldContainerId(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, fmt.Errorf("OldContainerId is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, fmt.Errorf("OldContainerId requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldContainerId: %w", err)
+	}
+	return oldValue.ContainerId, nil
+}
+
+// ResetContainerId resets all changes to the "containerId" field.
+func (m *ProcessMutation) ResetContainerId() {
+	m.containerId = nil
+}
+
+// Where appends a list predicates to the ProcessMutation builder.
+func (m *ProcessMutation) Where(ps ...predicate.Process) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// Op returns the operation name.
+func (m *ProcessMutation) Op() Op {
+	return m.op
+}
+
+// Type returns the node type of this mutation (Process).
+func (m *ProcessMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *ProcessMutation) Fields() []string {
+	fields := make([]string, 0, 10)
+	if m.created_at != nil {
+		fields = append(fields, process.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, process.FieldUpdatedAt)
+	}
+	if m.deleted_at != nil {
+		fields = append(fields, process.FieldDeletedAt)
+	}
+	if m.name != nil {
+		fields = append(fields, process.FieldName)
+	}
+	if m.pId != nil {
+		fields = append(fields, process.FieldPId)
+	}
+	if m.cmd != nil {
+		fields = append(fields, process.FieldCmd)
+	}
+	if m.info != nil {
+		fields = append(fields, process.FieldInfo)
+	}
+	if m.clusterId != nil {
+		fields = append(fields, process.FieldClusterId)
+	}
+	if m.nodeId != nil {
+		fields = append(fields, process.FieldNodeId)
+	}
+	if m.containerId != nil {
+		fields = append(fields, process.FieldContainerId)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *ProcessMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case process.FieldCreatedAt:
+		return m.CreatedAt()
+	case process.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case process.FieldDeletedAt:
+		return m.DeletedAt()
+	case process.FieldName:
+		return m.Name()
+	case process.FieldPId:
+		return m.PId()
+	case process.FieldCmd:
+		return m.Cmd()
+	case process.FieldInfo:
+		return m.Info()
+	case process.FieldClusterId:
+		return m.ClusterId()
+	case process.FieldNodeId:
+		return m.NodeId()
+	case process.FieldContainerId:
+		return m.ContainerId()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *ProcessMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case process.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case process.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case process.FieldDeletedAt:
+		return m.OldDeletedAt(ctx)
+	case process.FieldName:
+		return m.OldName(ctx)
+	case process.FieldPId:
+		return m.OldPId(ctx)
+	case process.FieldCmd:
+		return m.OldCmd(ctx)
+	case process.FieldInfo:
+		return m.OldInfo(ctx)
+	case process.FieldClusterId:
+		return m.OldClusterId(ctx)
+	case process.FieldNodeId:
+		return m.OldNodeId(ctx)
+	case process.FieldContainerId:
+		return m.OldContainerId(ctx)
+	}
+	return nil, fmt.Errorf("unknown Process field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ProcessMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case process.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case process.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case process.FieldDeletedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDeletedAt(v)
+		return nil
+	case process.FieldName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetName(v)
+		return nil
+	case process.FieldPId:
+		v, ok := value.(int32)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPId(v)
+		return nil
+	case process.FieldCmd:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCmd(v)
+		return nil
+	case process.FieldInfo:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetInfo(v)
+		return nil
+	case process.FieldClusterId:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetClusterId(v)
+		return nil
+	case process.FieldNodeId:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNodeId(v)
+		return nil
+	case process.FieldContainerId:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetContainerId(v)
+		return nil
+	}
+	return fmt.Errorf("unknown Process field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *ProcessMutation) AddedFields() []string {
+	var fields []string
+	if m.addpId != nil {
+		fields = append(fields, process.FieldPId)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *ProcessMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case process.FieldPId:
+		return m.AddedPId()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ProcessMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case process.FieldPId:
+		v, ok := value.(int32)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddPId(v)
+		return nil
+	}
+	return fmt.Errorf("unknown Process numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *ProcessMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *ProcessMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *ProcessMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown Process nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *ProcessMutation) ResetField(name string) error {
+	switch name {
+	case process.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case process.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case process.FieldDeletedAt:
+		m.ResetDeletedAt()
+		return nil
+	case process.FieldName:
+		m.ResetName()
+		return nil
+	case process.FieldPId:
+		m.ResetPId()
+		return nil
+	case process.FieldCmd:
+		m.ResetCmd()
+		return nil
+	case process.FieldInfo:
+		m.ResetInfo()
+		return nil
+	case process.FieldClusterId:
+		m.ResetClusterId()
+		return nil
+	case process.FieldNodeId:
+		m.ResetNodeId()
+		return nil
+	case process.FieldContainerId:
+		m.ResetContainerId()
+		return nil
+	}
+	return fmt.Errorf("unknown Process field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *ProcessMutation) AddedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *ProcessMutation) AddedIDs(name string) []ent.Value {
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *ProcessMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *ProcessMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *ProcessMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *ProcessMutation) EdgeCleared(name string) bool {
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *ProcessMutation) ClearEdge(name string) error {
+	return fmt.Errorf("unknown Process unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *ProcessMutation) ResetEdge(name string) error {
+	return fmt.Errorf("unknown Process edge %s", name)
 }
 
 // SettingMutation represents an operation that mutates the Setting nodes in the graph.

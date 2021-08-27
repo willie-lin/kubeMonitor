@@ -87,5 +87,8 @@ type Node func(*sql.Selector)
 // Proces is the predicate function for proces builders.
 type Proces func(*sql.Selector)
 
+// Process is the predicate function for process builders.
+type Process func(*sql.Selector)
+
 // Setting is the predicate function for setting builders.
 type Setting func(*sql.Selector)

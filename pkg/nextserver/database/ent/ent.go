@@ -35,6 +35,7 @@ import (
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/metrictype"
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/node"
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/proces"
+	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/process"
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/setting"
 )
 
@@ -83,6 +84,7 @@ func columnChecker(table string) func(string) error {
 		metrictype.Table:        metrictype.ValidColumn,
 		node.Table:              node.ValidColumn,
 		proces.Table:            proces.ValidColumn,
+		process.Table:           process.ValidColumn,
 		setting.Table:           setting.ValidColumn,
 	}
 	check, ok := checks[table]
