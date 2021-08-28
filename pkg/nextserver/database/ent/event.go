@@ -9,6 +9,9 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/event"
+	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/metricendpoint"
+	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/metriclabel"
+	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/metricname"
 )
 
 // Event is the model entity for the Event schema.
@@ -49,10 +52,68 @@ type Event struct {
 	// ContainerId holds the value of the "containerId" field.
 	ContainerId uint `json:"containerId,omitempty"`
 	// PodId holds the value of the "podId" field.
-	PodId                  uint `json:"podId,omitempty"`
+	PodId uint `json:"podId,omitempty"`
+	// Edges holds the relations/edges for other nodes in the graph.
+	// The values are being populated by the EventQuery when eager-loading is set.
+	Edges                  EventEdges `json:"edges"`
 	metric_endpoint_events *uint
 	metric_label_events    *uint
 	metric_name_events     *uint
+}
+
+// EventEdges holds the relations/edges for other nodes in the graph.
+type EventEdges struct {
+	// MetricNameEvents holds the value of the MetricName_events edge.
+	MetricNameEvents *MetricName `json:"MetricName_events,omitempty"`
+	// MetricLabelEvents holds the value of the MetricLabel_events edge.
+	MetricLabelEvents *MetricLabel `json:"MetricLabel_events,omitempty"`
+	// MetricEndpointEvents holds the value of the MetricEndpoint_events edge.
+	MetricEndpointEvents *MetricEndpoint `json:"MetricEndpoint_events,omitempty"`
+	// loadedTypes holds the information for reporting if a
+	// type was loaded (or requested) in eager-loading or not.
+	loadedTypes [3]bool
+}
+
+// MetricNameEventsOrErr returns the MetricNameEvents value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e EventEdges) MetricNameEventsOrErr() (*MetricName, error) {
+	if e.loadedTypes[0] {
+		if e.MetricNameEvents == nil {
+			// The edge MetricName_events was loaded in eager-loading,
+			// but was not found.
+			return nil, &NotFoundError{label: metricname.Label}
+		}
+		return e.MetricNameEvents, nil
+	}
+	return nil, &NotLoadedError{edge: "MetricName_events"}
+}
+
+// MetricLabelEventsOrErr returns the MetricLabelEvents value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e EventEdges) MetricLabelEventsOrErr() (*MetricLabel, error) {
+	if e.loadedTypes[1] {
+		if e.MetricLabelEvents == nil {
+			// The edge MetricLabel_events was loaded in eager-loading,
+			// but was not found.
+			return nil, &NotFoundError{label: metriclabel.Label}
+		}
+		return e.MetricLabelEvents, nil
+	}
+	return nil, &NotLoadedError{edge: "MetricLabel_events"}
+}
+
+// MetricEndpointEventsOrErr returns the MetricEndpointEvents value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e EventEdges) MetricEndpointEventsOrErr() (*MetricEndpoint, error) {
+	if e.loadedTypes[2] {
+		if e.MetricEndpointEvents == nil {
+			// The edge MetricEndpoint_events was loaded in eager-loading,
+			// but was not found.
+			return nil, &NotFoundError{label: metricendpoint.Label}
+		}
+		return e.MetricEndpointEvents, nil
+	}
+	return nil, &NotLoadedError{edge: "MetricEndpoint_events"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -221,6 +282,21 @@ func (e *Event) assignValues(columns []string, values []interface{}) error {
 		}
 	}
 	return nil
+}
+
+// QueryMetricNameEvents queries the "MetricName_events" edge of the Event entity.
+func (e *Event) QueryMetricNameEvents() *MetricNameQuery {
+	return (&EventClient{config: e.config}).QueryMetricNameEvents(e)
+}
+
+// QueryMetricLabelEvents queries the "MetricLabel_events" edge of the Event entity.
+func (e *Event) QueryMetricLabelEvents() *MetricLabelQuery {
+	return (&EventClient{config: e.config}).QueryMetricLabelEvents(e)
+}
+
+// QueryMetricEndpointEvents queries the "MetricEndpoint_events" edge of the Event entity.
+func (e *Event) QueryMetricEndpointEvents() *MetricEndpointQuery {
+	return (&EventClient{config: e.config}).QueryMetricEndpointEvents(e)
 }
 
 // Update returns a builder for updating this Event.

@@ -45,12 +45,21 @@ const (
 	FieldAgentId = "agent_id"
 	// FieldClusterId holds the string denoting the clusterid field in the database.
 	FieldClusterId = "cluster_id"
+	// EdgeOwner holds the string denoting the owner edge name in mutations.
+	EdgeOwner = "owner"
 	// EdgeContainers holds the string denoting the containers edge name in mutations.
 	EdgeContainers = "containers"
 	// EdgeProcess holds the string denoting the process edge name in mutations.
 	EdgeProcess = "process"
 	// Table holds the table name of the node in the database.
 	Table = "nodes"
+	// OwnerTable is the table that holds the owner relation/edge.
+	OwnerTable = "nodes"
+	// OwnerInverseTable is the table name for the Cluster entity.
+	// It exists in this package in order to avoid circular dependency with the "cluster" package.
+	OwnerInverseTable = "clusters"
+	// OwnerColumn is the table column denoting the owner relation/edge.
+	OwnerColumn = "cluster_nodes"
 	// ContainersTable is the table that holds the containers relation/edge.
 	ContainersTable = "containers"
 	// ContainersInverseTable is the table name for the Container entity.
@@ -92,7 +101,7 @@ var Columns = []string{
 // ForeignKeys holds the SQL foreign-keys that are owned by the "nodes"
 // table and are not defined as standalone fields in the schema.
 var ForeignKeys = []string{
-	"agent_nodes",
+	"agent_node",
 	"cluster_nodes",
 }
 

@@ -21,7 +21,6 @@ func (Node) Annotations() []schema.Annotation {
 	}
 }
 
-
 // Fields of the Node.
 func (Node) Fields() []ent.Field {
 	return []ent.Field{
@@ -37,7 +36,7 @@ func (Node) Fields() []ent.Field {
 
 		field.String("platform").MaxLen(64),
 		field.String("platformFamily").MaxLen(64),
-		field.JSON("info",[]string{}),
+		field.JSON("info", []string{}),
 
 		field.String("uuid").Unique(),
 		field.String("description"),
@@ -45,16 +44,16 @@ func (Node) Fields() []ent.Field {
 
 		field.Uint("agentId"),
 		field.Uint("clusterId"),
-
 	}
 }
 
 // Edges of the Node.
 func (Node) Edges() []ent.Edge {
 	return []ent.Edge{
+
+		edge.From("owner", Cluster.Type).Ref("nodes").Unique(),
 		edge.To("containers", Container.Type),
 		edge.To("process", Proces.Type),
-
 	}
 }
 
@@ -70,4 +69,3 @@ func (Node) Indexes() []ent.Index {
 		index.Fields("agentId", "clusterId"),
 	}
 }
-

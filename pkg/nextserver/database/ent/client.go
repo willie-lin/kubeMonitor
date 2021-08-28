@@ -403,15 +403,31 @@ func (c *AgentClient) GetX(ctx context.Context, id uint) *Agent {
 	return obj
 }
 
-// QueryNodes queries the nodes edge of a Agent.
-func (c *AgentClient) QueryNodes(a *Agent) *NodeQuery {
+// QueryNode queries the node edge of a Agent.
+func (c *AgentClient) QueryNode(a *Agent) *NodeQuery {
 	query := &NodeQuery{config: c.config}
 	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
 		id := a.ID
 		step := sqlgraph.NewStep(
 			sqlgraph.From(agent.Table, agent.FieldID, id),
 			sqlgraph.To(node.Table, node.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, agent.NodesTable, agent.NodesColumn),
+			sqlgraph.Edge(sqlgraph.O2M, false, agent.NodeTable, agent.NodeColumn),
+		)
+		fromV = sqlgraph.Neighbors(a.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryOwner queries the owner edge of a Agent.
+func (c *AgentClient) QueryOwner(a *Agent) *ClusterQuery {
+	query := &ClusterQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := a.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(agent.Table, agent.FieldID, id),
+			sqlgraph.To(cluster.Table, cluster.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, agent.OwnerTable, agent.OwnerColumn),
 		)
 		fromV = sqlgraph.Neighbors(a.driver.Dialect(), step)
 		return fromV, nil
@@ -647,6 +663,22 @@ func (c *ContainerClient) QueryProcess(co *Container) *ProcesQuery {
 	return query
 }
 
+// QueryOwner queries the owner edge of a Container.
+func (c *ContainerClient) QueryOwner(co *Container) *NodeQuery {
+	query := &NodeQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := co.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(container.Table, container.FieldID, id),
+			sqlgraph.To(node.Table, node.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, container.OwnerTable, container.OwnerColumn),
+		)
+		fromV = sqlgraph.Neighbors(co.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *ContainerClient) Hooks() []Hook {
 	return c.hooks.Container
@@ -735,6 +767,54 @@ func (c *EventClient) GetX(ctx context.Context, id int) *Event {
 		panic(err)
 	}
 	return obj
+}
+
+// QueryMetricNameEvents queries the MetricName_events edge of a Event.
+func (c *EventClient) QueryMetricNameEvents(e *Event) *MetricNameQuery {
+	query := &MetricNameQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := e.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(event.Table, event.FieldID, id),
+			sqlgraph.To(metricname.Table, metricname.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, event.MetricNameEventsTable, event.MetricNameEventsColumn),
+		)
+		fromV = sqlgraph.Neighbors(e.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryMetricLabelEvents queries the MetricLabel_events edge of a Event.
+func (c *EventClient) QueryMetricLabelEvents(e *Event) *MetricLabelQuery {
+	query := &MetricLabelQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := e.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(event.Table, event.FieldID, id),
+			sqlgraph.To(metriclabel.Table, metriclabel.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, event.MetricLabelEventsTable, event.MetricLabelEventsColumn),
+		)
+		fromV = sqlgraph.Neighbors(e.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryMetricEndpointEvents queries the MetricEndpoint_events edge of a Event.
+func (c *EventClient) QueryMetricEndpointEvents(e *Event) *MetricEndpointQuery {
+	query := &MetricEndpointQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := e.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(event.Table, event.FieldID, id),
+			sqlgraph.To(metricendpoint.Table, metricendpoint.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, event.MetricEndpointEventsTable, event.MetricEndpointEventsColumn),
+		)
+		fromV = sqlgraph.Neighbors(e.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
 }
 
 // Hooks returns the client hooks.
@@ -2267,6 +2347,54 @@ func (c *MetricClient) GetX(ctx context.Context, id int) *Metric {
 	return obj
 }
 
+// QueryMetricNameMetrics queries the MetricName_Metrics edge of a Metric.
+func (c *MetricClient) QueryMetricNameMetrics(m *Metric) *MetricNameQuery {
+	query := &MetricNameQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(metric.Table, metric.FieldID, id),
+			sqlgraph.To(metricname.Table, metricname.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, metric.MetricNameMetricsTable, metric.MetricNameMetricsColumn),
+		)
+		fromV = sqlgraph.Neighbors(m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryMetricEndpointMetrics queries the MetricEndpoint_Metrics edge of a Metric.
+func (c *MetricClient) QueryMetricEndpointMetrics(m *Metric) *MetricEndpointQuery {
+	query := &MetricEndpointQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(metric.Table, metric.FieldID, id),
+			sqlgraph.To(metricendpoint.Table, metricendpoint.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, metric.MetricEndpointMetricsTable, metric.MetricEndpointMetricsColumn),
+		)
+		fromV = sqlgraph.Neighbors(m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryMetricLabelMetrics queries the MetricLabel_Metrics edge of a Metric.
+func (c *MetricClient) QueryMetricLabelMetrics(m *Metric) *MetricLabelQuery {
+	query := &MetricLabelQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(metric.Table, metric.FieldID, id),
+			sqlgraph.To(metriclabel.Table, metriclabel.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, metric.MetricLabelMetricsTable, metric.MetricLabelMetricsColumn),
+		)
+		fromV = sqlgraph.Neighbors(m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *MetricClient) Hooks() []Hook {
 	return c.hooks.Metric
@@ -2829,6 +2957,22 @@ func (c *NodeClient) GetX(ctx context.Context, id uint) *Node {
 	return obj
 }
 
+// QueryOwner queries the owner edge of a Node.
+func (c *NodeClient) QueryOwner(n *Node) *ClusterQuery {
+	query := &ClusterQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := n.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(node.Table, node.FieldID, id),
+			sqlgraph.To(cluster.Table, cluster.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, node.OwnerTable, node.OwnerColumn),
+		)
+		fromV = sqlgraph.Neighbors(n.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryContainers queries the containers edge of a Node.
 func (c *NodeClient) QueryContainers(n *Node) *ContainerQuery {
 	query := &ContainerQuery{config: c.config}
@@ -2949,6 +3093,38 @@ func (c *ProcesClient) GetX(ctx context.Context, id uint) *Proces {
 		panic(err)
 	}
 	return obj
+}
+
+// QueryNodeProcess queries the node_process edge of a Proces.
+func (c *ProcesClient) QueryNodeProcess(pr *Proces) *NodeQuery {
+	query := &NodeQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := pr.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(proces.Table, proces.FieldID, id),
+			sqlgraph.To(node.Table, node.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, proces.NodeProcessTable, proces.NodeProcessColumn),
+		)
+		fromV = sqlgraph.Neighbors(pr.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryContainerProcess queries the container_process edge of a Proces.
+func (c *ProcesClient) QueryContainerProcess(pr *Proces) *ContainerQuery {
+	query := &ContainerQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := pr.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(proces.Table, proces.FieldID, id),
+			sqlgraph.To(container.Table, container.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, proces.ContainerProcessTable, proces.ContainerProcessColumn),
+		)
+		fromV = sqlgraph.Neighbors(pr.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
 }
 
 // Hooks returns the client hooks.

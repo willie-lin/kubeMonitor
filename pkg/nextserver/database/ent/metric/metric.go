@@ -37,8 +37,35 @@ const (
 	FieldProcesId = "proces_id"
 	// FieldContainerId holds the string denoting the containerid field in the database.
 	FieldContainerId = "container_id"
+	// EdgeMetricNameMetrics holds the string denoting the metricname_metrics edge name in mutations.
+	EdgeMetricNameMetrics = "MetricName_Metrics"
+	// EdgeMetricEndpointMetrics holds the string denoting the metricendpoint_metrics edge name in mutations.
+	EdgeMetricEndpointMetrics = "MetricEndpoint_Metrics"
+	// EdgeMetricLabelMetrics holds the string denoting the metriclabel_metrics edge name in mutations.
+	EdgeMetricLabelMetrics = "MetricLabel_Metrics"
 	// Table holds the table name of the metric in the database.
 	Table = "metrics"
+	// MetricNameMetricsTable is the table that holds the MetricName_Metrics relation/edge.
+	MetricNameMetricsTable = "metrics"
+	// MetricNameMetricsInverseTable is the table name for the MetricName entity.
+	// It exists in this package in order to avoid circular dependency with the "metricname" package.
+	MetricNameMetricsInverseTable = "metricNames"
+	// MetricNameMetricsColumn is the table column denoting the MetricName_Metrics relation/edge.
+	MetricNameMetricsColumn = "metric_name_metrics"
+	// MetricEndpointMetricsTable is the table that holds the MetricEndpoint_Metrics relation/edge.
+	MetricEndpointMetricsTable = "metrics"
+	// MetricEndpointMetricsInverseTable is the table name for the MetricEndpoint entity.
+	// It exists in this package in order to avoid circular dependency with the "metricendpoint" package.
+	MetricEndpointMetricsInverseTable = "metricEndpoints"
+	// MetricEndpointMetricsColumn is the table column denoting the MetricEndpoint_Metrics relation/edge.
+	MetricEndpointMetricsColumn = "metric_endpoint_metrics"
+	// MetricLabelMetricsTable is the table that holds the MetricLabel_Metrics relation/edge.
+	MetricLabelMetricsTable = "metrics"
+	// MetricLabelMetricsInverseTable is the table name for the MetricLabel entity.
+	// It exists in this package in order to avoid circular dependency with the "metriclabel" package.
+	MetricLabelMetricsInverseTable = "metricLabels"
+	// MetricLabelMetricsColumn is the table column denoting the MetricLabel_Metrics relation/edge.
+	MetricLabelMetricsColumn = "metric_label_metrics"
 )
 
 // Columns holds all SQL columns for metric fields.

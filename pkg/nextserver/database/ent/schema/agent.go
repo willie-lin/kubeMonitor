@@ -48,10 +48,11 @@ func (Agent) Fields() []ent.Field {
 // Edges of the Agent.
 func (Agent) Edges() []ent.Edge {
 	return []ent.Edge{
-		edge.To("nodes", Node.Type),
+		edge.To("node", Node.Type),
+		edge.From("owner", Cluster.Type).Ref("agents").Unique(),
+		//edge.From("owner", Node.Type).Ref("node").Unique(),
 	}
 }
-
 
 // Mixin Agent
 func (Agent) Mixin() []ent.Mixin {

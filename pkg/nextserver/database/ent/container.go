@@ -10,6 +10,7 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/container"
+	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/node"
 )
 
 // Container is the model entity for the Container schema.
@@ -47,9 +48,11 @@ type Container struct {
 type ContainerEdges struct {
 	// Process holds the value of the process edge.
 	Process []*Proces `json:"process,omitempty"`
+	// Owner holds the value of the owner edge.
+	Owner *Node `json:"owner,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
+	loadedTypes [2]bool
 }
 
 // ProcessOrErr returns the Process value or an error if the edge
@@ -59,6 +62,20 @@ func (e ContainerEdges) ProcessOrErr() ([]*Proces, error) {
 		return e.Process, nil
 	}
 	return nil, &NotLoadedError{edge: "process"}
+}
+
+// OwnerOrErr returns the Owner value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e ContainerEdges) OwnerOrErr() (*Node, error) {
+	if e.loadedTypes[1] {
+		if e.Owner == nil {
+			// The edge owner was loaded in eager-loading,
+			// but was not found.
+			return nil, &NotFoundError{label: node.Label}
+		}
+		return e.Owner, nil
+	}
+	return nil, &NotLoadedError{edge: "owner"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -174,6 +191,11 @@ func (c *Container) assignValues(columns []string, values []interface{}) error {
 // QueryProcess queries the "process" edge of the Container entity.
 func (c *Container) QueryProcess() *ProcesQuery {
 	return (&ContainerClient{config: c.config}).QueryProcess(c)
+}
+
+// QueryOwner queries the "owner" edge of the Container entity.
+func (c *Container) QueryOwner() *NodeQuery {
+	return (&ContainerClient{config: c.config}).QueryOwner(c)
 }
 
 // Update returns a builder for updating this Container.

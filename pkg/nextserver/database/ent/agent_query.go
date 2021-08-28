@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/agent"
+	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/cluster"
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/node"
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/predicate"
 )
@@ -27,7 +28,8 @@ type AgentQuery struct {
 	fields     []string
 	predicates []predicate.Agent
 	// eager-loading edges.
-	withNodes *NodeQuery
+	withNode  *NodeQuery
+	withOwner *ClusterQuery
 	withFKs   bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -65,8 +67,8 @@ func (aq *AgentQuery) Order(o ...OrderFunc) *AgentQuery {
 	return aq
 }
 
-// QueryNodes chains the current query on the "nodes" edge.
-func (aq *AgentQuery) QueryNodes() *NodeQuery {
+// QueryNode chains the current query on the "node" edge.
+func (aq *AgentQuery) QueryNode() *NodeQuery {
 	query := &NodeQuery{config: aq.config}
 	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
 		if err := aq.prepareQuery(ctx); err != nil {
@@ -79,7 +81,29 @@ func (aq *AgentQuery) QueryNodes() *NodeQuery {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(agent.Table, agent.FieldID, selector),
 			sqlgraph.To(node.Table, node.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, agent.NodesTable, agent.NodesColumn),
+			sqlgraph.Edge(sqlgraph.O2M, false, agent.NodeTable, agent.NodeColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(aq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryOwner chains the current query on the "owner" edge.
+func (aq *AgentQuery) QueryOwner() *ClusterQuery {
+	query := &ClusterQuery{config: aq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := aq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := aq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(agent.Table, agent.FieldID, selector),
+			sqlgraph.To(cluster.Table, cluster.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, agent.OwnerTable, agent.OwnerColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(aq.driver.Dialect(), step)
 		return fromU, nil
@@ -268,21 +292,33 @@ func (aq *AgentQuery) Clone() *AgentQuery {
 		offset:     aq.offset,
 		order:      append([]OrderFunc{}, aq.order...),
 		predicates: append([]predicate.Agent{}, aq.predicates...),
-		withNodes:  aq.withNodes.Clone(),
+		withNode:   aq.withNode.Clone(),
+		withOwner:  aq.withOwner.Clone(),
 		// clone intermediate query.
 		sql:  aq.sql.Clone(),
 		path: aq.path,
 	}
 }
 
-// WithNodes tells the query-builder to eager-load the nodes that are connected to
-// the "nodes" edge. The optional arguments are used to configure the query builder of the edge.
-func (aq *AgentQuery) WithNodes(opts ...func(*NodeQuery)) *AgentQuery {
+// WithNode tells the query-builder to eager-load the nodes that are connected to
+// the "node" edge. The optional arguments are used to configure the query builder of the edge.
+func (aq *AgentQuery) WithNode(opts ...func(*NodeQuery)) *AgentQuery {
 	query := &NodeQuery{config: aq.config}
 	for _, opt := range opts {
 		opt(query)
 	}
-	aq.withNodes = query
+	aq.withNode = query
+	return aq
+}
+
+// WithOwner tells the query-builder to eager-load the nodes that are connected to
+// the "owner" edge. The optional arguments are used to configure the query builder of the edge.
+func (aq *AgentQuery) WithOwner(opts ...func(*ClusterQuery)) *AgentQuery {
+	query := &ClusterQuery{config: aq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	aq.withOwner = query
 	return aq
 }
 
@@ -352,10 +388,14 @@ func (aq *AgentQuery) sqlAll(ctx context.Context) ([]*Agent, error) {
 		nodes       = []*Agent{}
 		withFKs     = aq.withFKs
 		_spec       = aq.querySpec()
-		loadedTypes = [1]bool{
-			aq.withNodes != nil,
+		loadedTypes = [2]bool{
+			aq.withNode != nil,
+			aq.withOwner != nil,
 		}
 	)
+	if aq.withOwner != nil {
+		withFKs = true
+	}
 	if withFKs {
 		_spec.Node.Columns = append(_spec.Node.Columns, agent.ForeignKeys...)
 	}
@@ -379,32 +419,61 @@ func (aq *AgentQuery) sqlAll(ctx context.Context) ([]*Agent, error) {
 		return nodes, nil
 	}
 
-	if query := aq.withNodes; query != nil {
+	if query := aq.withNode; query != nil {
 		fks := make([]driver.Value, 0, len(nodes))
 		nodeids := make(map[uint]*Agent)
 		for i := range nodes {
 			fks = append(fks, nodes[i].ID)
 			nodeids[nodes[i].ID] = nodes[i]
-			nodes[i].Edges.Nodes = []*Node{}
+			nodes[i].Edges.Node = []*Node{}
 		}
 		query.withFKs = true
 		query.Where(predicate.Node(func(s *sql.Selector) {
-			s.Where(sql.InValues(agent.NodesColumn, fks...))
+			s.Where(sql.InValues(agent.NodeColumn, fks...))
 		}))
 		neighbors, err := query.All(ctx)
 		if err != nil {
 			return nil, err
 		}
 		for _, n := range neighbors {
-			fk := n.agent_nodes
+			fk := n.agent_node
 			if fk == nil {
-				return nil, fmt.Errorf(`foreign-key "agent_nodes" is nil for node %v`, n.ID)
+				return nil, fmt.Errorf(`foreign-key "agent_node" is nil for node %v`, n.ID)
 			}
 			node, ok := nodeids[*fk]
 			if !ok {
-				return nil, fmt.Errorf(`unexpected foreign-key "agent_nodes" returned %v for node %v`, *fk, n.ID)
+				return nil, fmt.Errorf(`unexpected foreign-key "agent_node" returned %v for node %v`, *fk, n.ID)
 			}
-			node.Edges.Nodes = append(node.Edges.Nodes, n)
+			node.Edges.Node = append(node.Edges.Node, n)
+		}
+	}
+
+	if query := aq.withOwner; query != nil {
+		ids := make([]uint, 0, len(nodes))
+		nodeids := make(map[uint][]*Agent)
+		for i := range nodes {
+			if nodes[i].cluster_agents == nil {
+				continue
+			}
+			fk := *nodes[i].cluster_agents
+			if _, ok := nodeids[fk]; !ok {
+				ids = append(ids, fk)
+			}
+			nodeids[fk] = append(nodeids[fk], nodes[i])
+		}
+		query.Where(cluster.IDIn(ids...))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			nodes, ok := nodeids[n.ID]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "cluster_agents" returned %v`, n.ID)
+			}
+			for i := range nodes {
+				nodes[i].Edges.Owner = n
+			}
 		}
 	}
 

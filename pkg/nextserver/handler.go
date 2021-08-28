@@ -1,4 +1,4 @@
-package nextserver
+package main
 
 import (
 	"context"
@@ -19,6 +19,13 @@ import (
 	"net/http"
 	"time"
 )
+
+func Hello(client *ent.Client) echo.HandlerFunc {
+	return func(c echo.Context) error {
+
+		return c.JSON(http.StatusOK, "hello, welcome to kubeMonitor!!!")
+	}
+}
 
 type Controller struct {
 	client *ent.Client

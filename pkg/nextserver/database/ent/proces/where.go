@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/predicate"
 )
 
@@ -1011,6 +1012,62 @@ func ContainerIdEqualFold(v string) predicate.Proces {
 func ContainerIdContainsFold(v string) predicate.Proces {
 	return predicate.Proces(func(s *sql.Selector) {
 		s.Where(sql.ContainsFold(s.C(FieldContainerId), v))
+	})
+}
+
+// HasNodeProcess applies the HasEdge predicate on the "node_process" edge.
+func HasNodeProcess() predicate.Proces {
+	return predicate.Proces(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(NodeProcessTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, NodeProcessTable, NodeProcessColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasNodeProcessWith applies the HasEdge predicate on the "node_process" edge with a given conditions (other predicates).
+func HasNodeProcessWith(preds ...predicate.Node) predicate.Proces {
+	return predicate.Proces(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(NodeProcessInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, NodeProcessTable, NodeProcessColumn),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasContainerProcess applies the HasEdge predicate on the "container_process" edge.
+func HasContainerProcess() predicate.Proces {
+	return predicate.Proces(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(ContainerProcessTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, ContainerProcessTable, ContainerProcessColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasContainerProcessWith applies the HasEdge predicate on the "container_process" edge with a given conditions (other predicates).
+func HasContainerProcessWith(preds ...predicate.Container) predicate.Proces {
+	return predicate.Proces(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(ContainerProcessInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, ContainerProcessTable, ContainerProcessColumn),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
 	})
 }
 

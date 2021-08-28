@@ -1494,25 +1494,53 @@ func ClusterIdLTE(v uint) predicate.Agent {
 	})
 }
 
-// HasNodes applies the HasEdge predicate on the "nodes" edge.
-func HasNodes() predicate.Agent {
+// HasNode applies the HasEdge predicate on the "node" edge.
+func HasNode() predicate.Agent {
 	return predicate.Agent(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(NodesTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, NodesTable, NodesColumn),
+			sqlgraph.To(NodeTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, NodeTable, NodeColumn),
 		)
 		sqlgraph.HasNeighbors(s, step)
 	})
 }
 
-// HasNodesWith applies the HasEdge predicate on the "nodes" edge with a given conditions (other predicates).
-func HasNodesWith(preds ...predicate.Node) predicate.Agent {
+// HasNodeWith applies the HasEdge predicate on the "node" edge with a given conditions (other predicates).
+func HasNodeWith(preds ...predicate.Node) predicate.Agent {
 	return predicate.Agent(func(s *sql.Selector) {
 		step := sqlgraph.NewStep(
 			sqlgraph.From(Table, FieldID),
-			sqlgraph.To(NodesInverseTable, FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, NodesTable, NodesColumn),
+			sqlgraph.To(NodeInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, NodeTable, NodeColumn),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasOwner applies the HasEdge predicate on the "owner" edge.
+func HasOwner() predicate.Agent {
+	return predicate.Agent(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(OwnerTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, OwnerTable, OwnerColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasOwnerWith applies the HasEdge predicate on the "owner" edge with a given conditions (other predicates).
+func HasOwnerWith(preds ...predicate.Cluster) predicate.Agent {
+	return predicate.Agent(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(OwnerInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, OwnerTable, OwnerColumn),
 		)
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {

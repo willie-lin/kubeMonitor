@@ -41,17 +41,26 @@ const (
 	FieldDescription = "description"
 	// FieldClusterId holds the string denoting the clusterid field in the database.
 	FieldClusterId = "cluster_id"
-	// EdgeNodes holds the string denoting the nodes edge name in mutations.
-	EdgeNodes = "nodes"
+	// EdgeNode holds the string denoting the node edge name in mutations.
+	EdgeNode = "node"
+	// EdgeOwner holds the string denoting the owner edge name in mutations.
+	EdgeOwner = "owner"
 	// Table holds the table name of the agent in the database.
 	Table = "agents"
-	// NodesTable is the table that holds the nodes relation/edge.
-	NodesTable = "nodes"
-	// NodesInverseTable is the table name for the Node entity.
+	// NodeTable is the table that holds the node relation/edge.
+	NodeTable = "nodes"
+	// NodeInverseTable is the table name for the Node entity.
 	// It exists in this package in order to avoid circular dependency with the "node" package.
-	NodesInverseTable = "nodes"
-	// NodesColumn is the table column denoting the nodes relation/edge.
-	NodesColumn = "agent_nodes"
+	NodeInverseTable = "nodes"
+	// NodeColumn is the table column denoting the node relation/edge.
+	NodeColumn = "agent_node"
+	// OwnerTable is the table that holds the owner relation/edge.
+	OwnerTable = "agents"
+	// OwnerInverseTable is the table name for the Cluster entity.
+	// It exists in this package in order to avoid circular dependency with the "cluster" package.
+	OwnerInverseTable = "clusters"
+	// OwnerColumn is the table column denoting the owner relation/edge.
+	OwnerColumn = "cluster_agents"
 )
 
 // Columns holds all SQL columns for agent fields.

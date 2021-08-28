@@ -9,6 +9,9 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/metric"
+	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/metricendpoint"
+	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/metriclabel"
+	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/metricname"
 )
 
 // Metric is the model entity for the Metric schema.
@@ -41,10 +44,68 @@ type Metric struct {
 	// ProcesId holds the value of the "procesId" field.
 	ProcesId uint `json:"procesId,omitempty"`
 	// ContainerId holds the value of the "containerId" field.
-	ContainerId             uint `json:"containerId,omitempty"`
+	ContainerId uint `json:"containerId,omitempty"`
+	// Edges holds the relations/edges for other nodes in the graph.
+	// The values are being populated by the MetricQuery when eager-loading is set.
+	Edges                   MetricEdges `json:"edges"`
 	metric_endpoint_metrics *uint
 	metric_label_metrics    *uint
 	metric_name_metrics     *uint
+}
+
+// MetricEdges holds the relations/edges for other nodes in the graph.
+type MetricEdges struct {
+	// MetricNameMetrics holds the value of the MetricName_Metrics edge.
+	MetricNameMetrics *MetricName `json:"MetricName_Metrics,omitempty"`
+	// MetricEndpointMetrics holds the value of the MetricEndpoint_Metrics edge.
+	MetricEndpointMetrics *MetricEndpoint `json:"MetricEndpoint_Metrics,omitempty"`
+	// MetricLabelMetrics holds the value of the MetricLabel_Metrics edge.
+	MetricLabelMetrics *MetricLabel `json:"MetricLabel_Metrics,omitempty"`
+	// loadedTypes holds the information for reporting if a
+	// type was loaded (or requested) in eager-loading or not.
+	loadedTypes [3]bool
+}
+
+// MetricNameMetricsOrErr returns the MetricNameMetrics value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e MetricEdges) MetricNameMetricsOrErr() (*MetricName, error) {
+	if e.loadedTypes[0] {
+		if e.MetricNameMetrics == nil {
+			// The edge MetricName_Metrics was loaded in eager-loading,
+			// but was not found.
+			return nil, &NotFoundError{label: metricname.Label}
+		}
+		return e.MetricNameMetrics, nil
+	}
+	return nil, &NotLoadedError{edge: "MetricName_Metrics"}
+}
+
+// MetricEndpointMetricsOrErr returns the MetricEndpointMetrics value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e MetricEdges) MetricEndpointMetricsOrErr() (*MetricEndpoint, error) {
+	if e.loadedTypes[1] {
+		if e.MetricEndpointMetrics == nil {
+			// The edge MetricEndpoint_Metrics was loaded in eager-loading,
+			// but was not found.
+			return nil, &NotFoundError{label: metricendpoint.Label}
+		}
+		return e.MetricEndpointMetrics, nil
+	}
+	return nil, &NotLoadedError{edge: "MetricEndpoint_Metrics"}
+}
+
+// MetricLabelMetricsOrErr returns the MetricLabelMetrics value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e MetricEdges) MetricLabelMetricsOrErr() (*MetricLabel, error) {
+	if e.loadedTypes[2] {
+		if e.MetricLabelMetrics == nil {
+			// The edge MetricLabel_Metrics was loaded in eager-loading,
+			// but was not found.
+			return nil, &NotFoundError{label: metriclabel.Label}
+		}
+		return e.MetricLabelMetrics, nil
+	}
+	return nil, &NotLoadedError{edge: "MetricLabel_Metrics"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -187,6 +248,21 @@ func (m *Metric) assignValues(columns []string, values []interface{}) error {
 		}
 	}
 	return nil
+}
+
+// QueryMetricNameMetrics queries the "MetricName_Metrics" edge of the Metric entity.
+func (m *Metric) QueryMetricNameMetrics() *MetricNameQuery {
+	return (&MetricClient{config: m.config}).QueryMetricNameMetrics(m)
+}
+
+// QueryMetricEndpointMetrics queries the "MetricEndpoint_Metrics" edge of the Metric entity.
+func (m *Metric) QueryMetricEndpointMetrics() *MetricEndpointQuery {
+	return (&MetricClient{config: m.config}).QueryMetricEndpointMetrics(m)
+}
+
+// QueryMetricLabelMetrics queries the "MetricLabel_Metrics" edge of the Metric entity.
+func (m *Metric) QueryMetricLabelMetrics() *MetricLabelQuery {
+	return (&MetricClient{config: m.config}).QueryMetricLabelMetrics(m)
 }
 
 // Update returns a builder for updating this Metric.

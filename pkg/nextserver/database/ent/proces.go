@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"entgo.io/ent/dialect/sql"
+	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/container"
+	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/node"
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/proces"
 )
 
@@ -36,9 +38,51 @@ type Proces struct {
 	// NodeId holds the value of the "nodeId" field.
 	NodeId string `json:"nodeId,omitempty"`
 	// ContainerId holds the value of the "containerId" field.
-	ContainerId       string `json:"containerId,omitempty"`
+	ContainerId string `json:"containerId,omitempty"`
+	// Edges holds the relations/edges for other nodes in the graph.
+	// The values are being populated by the ProcesQuery when eager-loading is set.
+	Edges             ProcesEdges `json:"edges"`
 	container_process *uint
 	node_process      *uint
+}
+
+// ProcesEdges holds the relations/edges for other nodes in the graph.
+type ProcesEdges struct {
+	// NodeProcess holds the value of the node_process edge.
+	NodeProcess *Node `json:"node_process,omitempty"`
+	// ContainerProcess holds the value of the container_process edge.
+	ContainerProcess *Container `json:"container_process,omitempty"`
+	// loadedTypes holds the information for reporting if a
+	// type was loaded (or requested) in eager-loading or not.
+	loadedTypes [2]bool
+}
+
+// NodeProcessOrErr returns the NodeProcess value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e ProcesEdges) NodeProcessOrErr() (*Node, error) {
+	if e.loadedTypes[0] {
+		if e.NodeProcess == nil {
+			// The edge node_process was loaded in eager-loading,
+			// but was not found.
+			return nil, &NotFoundError{label: node.Label}
+		}
+		return e.NodeProcess, nil
+	}
+	return nil, &NotLoadedError{edge: "node_process"}
+}
+
+// ContainerProcessOrErr returns the ContainerProcess value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e ProcesEdges) ContainerProcessOrErr() (*Container, error) {
+	if e.loadedTypes[1] {
+		if e.ContainerProcess == nil {
+			// The edge container_process was loaded in eager-loading,
+			// but was not found.
+			return nil, &NotFoundError{label: container.Label}
+		}
+		return e.ContainerProcess, nil
+	}
+	return nil, &NotLoadedError{edge: "container_process"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -158,6 +202,16 @@ func (pr *Proces) assignValues(columns []string, values []interface{}) error {
 		}
 	}
 	return nil
+}
+
+// QueryNodeProcess queries the "node_process" edge of the Proces entity.
+func (pr *Proces) QueryNodeProcess() *NodeQuery {
+	return (&ProcesClient{config: pr.config}).QueryNodeProcess(pr)
+}
+
+// QueryContainerProcess queries the "container_process" edge of the Proces entity.
+func (pr *Proces) QueryContainerProcess() *ContainerQuery {
+	return (&ProcesClient{config: pr.config}).QueryContainerProcess(pr)
 }
 
 // Update returns a builder for updating this Proces.

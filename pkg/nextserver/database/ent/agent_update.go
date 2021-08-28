@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/agent"
+	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/cluster"
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/node"
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/predicate"
 )
@@ -127,14 +128,14 @@ func (au *AgentUpdate) AddClusterId(u uint) *AgentUpdate {
 	return au
 }
 
-// AddNodeIDs adds the "nodes" edge to the Node entity by IDs.
+// AddNodeIDs adds the "node" edge to the Node entity by IDs.
 func (au *AgentUpdate) AddNodeIDs(ids ...uint) *AgentUpdate {
 	au.mutation.AddNodeIDs(ids...)
 	return au
 }
 
-// AddNodes adds the "nodes" edges to the Node entity.
-func (au *AgentUpdate) AddNodes(n ...*Node) *AgentUpdate {
+// AddNode adds the "node" edges to the Node entity.
+func (au *AgentUpdate) AddNode(n ...*Node) *AgentUpdate {
 	ids := make([]uint, len(n))
 	for i := range n {
 		ids[i] = n[i].ID
@@ -142,30 +143,55 @@ func (au *AgentUpdate) AddNodes(n ...*Node) *AgentUpdate {
 	return au.AddNodeIDs(ids...)
 }
 
+// SetOwnerID sets the "owner" edge to the Cluster entity by ID.
+func (au *AgentUpdate) SetOwnerID(id uint) *AgentUpdate {
+	au.mutation.SetOwnerID(id)
+	return au
+}
+
+// SetNillableOwnerID sets the "owner" edge to the Cluster entity by ID if the given value is not nil.
+func (au *AgentUpdate) SetNillableOwnerID(id *uint) *AgentUpdate {
+	if id != nil {
+		au = au.SetOwnerID(*id)
+	}
+	return au
+}
+
+// SetOwner sets the "owner" edge to the Cluster entity.
+func (au *AgentUpdate) SetOwner(c *Cluster) *AgentUpdate {
+	return au.SetOwnerID(c.ID)
+}
+
 // Mutation returns the AgentMutation object of the builder.
 func (au *AgentUpdate) Mutation() *AgentMutation {
 	return au.mutation
 }
 
-// ClearNodes clears all "nodes" edges to the Node entity.
-func (au *AgentUpdate) ClearNodes() *AgentUpdate {
-	au.mutation.ClearNodes()
+// ClearNode clears all "node" edges to the Node entity.
+func (au *AgentUpdate) ClearNode() *AgentUpdate {
+	au.mutation.ClearNode()
 	return au
 }
 
-// RemoveNodeIDs removes the "nodes" edge to Node entities by IDs.
+// RemoveNodeIDs removes the "node" edge to Node entities by IDs.
 func (au *AgentUpdate) RemoveNodeIDs(ids ...uint) *AgentUpdate {
 	au.mutation.RemoveNodeIDs(ids...)
 	return au
 }
 
-// RemoveNodes removes "nodes" edges to Node entities.
-func (au *AgentUpdate) RemoveNodes(n ...*Node) *AgentUpdate {
+// RemoveNode removes "node" edges to Node entities.
+func (au *AgentUpdate) RemoveNode(n ...*Node) *AgentUpdate {
 	ids := make([]uint, len(n))
 	for i := range n {
 		ids[i] = n[i].ID
 	}
 	return au.RemoveNodeIDs(ids...)
+}
+
+// ClearOwner clears the "owner" edge to the Cluster entity.
+func (au *AgentUpdate) ClearOwner() *AgentUpdate {
+	au.mutation.ClearOwner()
+	return au
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -404,12 +430,12 @@ func (au *AgentUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Column: agent.FieldClusterId,
 		})
 	}
-	if au.mutation.NodesCleared() {
+	if au.mutation.NodeCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   agent.NodesTable,
-			Columns: []string{agent.NodesColumn},
+			Table:   agent.NodeTable,
+			Columns: []string{agent.NodeColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -420,12 +446,12 @@ func (au *AgentUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := au.mutation.RemovedNodesIDs(); len(nodes) > 0 && !au.mutation.NodesCleared() {
+	if nodes := au.mutation.RemovedNodeIDs(); len(nodes) > 0 && !au.mutation.NodeCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   agent.NodesTable,
-			Columns: []string{agent.NodesColumn},
+			Table:   agent.NodeTable,
+			Columns: []string{agent.NodeColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -439,17 +465,52 @@ func (au *AgentUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := au.mutation.NodesIDs(); len(nodes) > 0 {
+	if nodes := au.mutation.NodeIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   agent.NodesTable,
-			Columns: []string{agent.NodesColumn},
+			Table:   agent.NodeTable,
+			Columns: []string{agent.NodeColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeUint,
 					Column: node.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if au.mutation.OwnerCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   agent.OwnerTable,
+			Columns: []string{agent.OwnerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUint,
+					Column: cluster.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := au.mutation.OwnerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   agent.OwnerTable,
+			Columns: []string{agent.OwnerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUint,
+					Column: cluster.FieldID,
 				},
 			},
 		}
@@ -576,14 +637,14 @@ func (auo *AgentUpdateOne) AddClusterId(u uint) *AgentUpdateOne {
 	return auo
 }
 
-// AddNodeIDs adds the "nodes" edge to the Node entity by IDs.
+// AddNodeIDs adds the "node" edge to the Node entity by IDs.
 func (auo *AgentUpdateOne) AddNodeIDs(ids ...uint) *AgentUpdateOne {
 	auo.mutation.AddNodeIDs(ids...)
 	return auo
 }
 
-// AddNodes adds the "nodes" edges to the Node entity.
-func (auo *AgentUpdateOne) AddNodes(n ...*Node) *AgentUpdateOne {
+// AddNode adds the "node" edges to the Node entity.
+func (auo *AgentUpdateOne) AddNode(n ...*Node) *AgentUpdateOne {
 	ids := make([]uint, len(n))
 	for i := range n {
 		ids[i] = n[i].ID
@@ -591,30 +652,55 @@ func (auo *AgentUpdateOne) AddNodes(n ...*Node) *AgentUpdateOne {
 	return auo.AddNodeIDs(ids...)
 }
 
+// SetOwnerID sets the "owner" edge to the Cluster entity by ID.
+func (auo *AgentUpdateOne) SetOwnerID(id uint) *AgentUpdateOne {
+	auo.mutation.SetOwnerID(id)
+	return auo
+}
+
+// SetNillableOwnerID sets the "owner" edge to the Cluster entity by ID if the given value is not nil.
+func (auo *AgentUpdateOne) SetNillableOwnerID(id *uint) *AgentUpdateOne {
+	if id != nil {
+		auo = auo.SetOwnerID(*id)
+	}
+	return auo
+}
+
+// SetOwner sets the "owner" edge to the Cluster entity.
+func (auo *AgentUpdateOne) SetOwner(c *Cluster) *AgentUpdateOne {
+	return auo.SetOwnerID(c.ID)
+}
+
 // Mutation returns the AgentMutation object of the builder.
 func (auo *AgentUpdateOne) Mutation() *AgentMutation {
 	return auo.mutation
 }
 
-// ClearNodes clears all "nodes" edges to the Node entity.
-func (auo *AgentUpdateOne) ClearNodes() *AgentUpdateOne {
-	auo.mutation.ClearNodes()
+// ClearNode clears all "node" edges to the Node entity.
+func (auo *AgentUpdateOne) ClearNode() *AgentUpdateOne {
+	auo.mutation.ClearNode()
 	return auo
 }
 
-// RemoveNodeIDs removes the "nodes" edge to Node entities by IDs.
+// RemoveNodeIDs removes the "node" edge to Node entities by IDs.
 func (auo *AgentUpdateOne) RemoveNodeIDs(ids ...uint) *AgentUpdateOne {
 	auo.mutation.RemoveNodeIDs(ids...)
 	return auo
 }
 
-// RemoveNodes removes "nodes" edges to Node entities.
-func (auo *AgentUpdateOne) RemoveNodes(n ...*Node) *AgentUpdateOne {
+// RemoveNode removes "node" edges to Node entities.
+func (auo *AgentUpdateOne) RemoveNode(n ...*Node) *AgentUpdateOne {
 	ids := make([]uint, len(n))
 	for i := range n {
 		ids[i] = n[i].ID
 	}
 	return auo.RemoveNodeIDs(ids...)
+}
+
+// ClearOwner clears the "owner" edge to the Cluster entity.
+func (auo *AgentUpdateOne) ClearOwner() *AgentUpdateOne {
+	auo.mutation.ClearOwner()
+	return auo
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -877,12 +963,12 @@ func (auo *AgentUpdateOne) sqlSave(ctx context.Context) (_node *Agent, err error
 			Column: agent.FieldClusterId,
 		})
 	}
-	if auo.mutation.NodesCleared() {
+	if auo.mutation.NodeCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   agent.NodesTable,
-			Columns: []string{agent.NodesColumn},
+			Table:   agent.NodeTable,
+			Columns: []string{agent.NodeColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -893,12 +979,12 @@ func (auo *AgentUpdateOne) sqlSave(ctx context.Context) (_node *Agent, err error
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := auo.mutation.RemovedNodesIDs(); len(nodes) > 0 && !auo.mutation.NodesCleared() {
+	if nodes := auo.mutation.RemovedNodeIDs(); len(nodes) > 0 && !auo.mutation.NodeCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   agent.NodesTable,
-			Columns: []string{agent.NodesColumn},
+			Table:   agent.NodeTable,
+			Columns: []string{agent.NodeColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -912,17 +998,52 @@ func (auo *AgentUpdateOne) sqlSave(ctx context.Context) (_node *Agent, err error
 		}
 		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
 	}
-	if nodes := auo.mutation.NodesIDs(); len(nodes) > 0 {
+	if nodes := auo.mutation.NodeIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   agent.NodesTable,
-			Columns: []string{agent.NodesColumn},
+			Table:   agent.NodeTable,
+			Columns: []string{agent.NodeColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeUint,
 					Column: node.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if auo.mutation.OwnerCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   agent.OwnerTable,
+			Columns: []string{agent.OwnerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUint,
+					Column: cluster.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := auo.mutation.OwnerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   agent.OwnerTable,
+			Columns: []string{agent.OwnerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUint,
+					Column: cluster.FieldID,
 				},
 			},
 		}

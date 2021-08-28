@@ -12,6 +12,9 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/metric"
+	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/metricendpoint"
+	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/metriclabel"
+	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/metricname"
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/predicate"
 )
 
@@ -24,7 +27,11 @@ type MetricQuery struct {
 	order      []OrderFunc
 	fields     []string
 	predicates []predicate.Metric
-	withFKs    bool
+	// eager-loading edges.
+	withMetricNameMetrics     *MetricNameQuery
+	withMetricEndpointMetrics *MetricEndpointQuery
+	withMetricLabelMetrics    *MetricLabelQuery
+	withFKs                   bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -59,6 +66,72 @@ func (mq *MetricQuery) Unique(unique bool) *MetricQuery {
 func (mq *MetricQuery) Order(o ...OrderFunc) *MetricQuery {
 	mq.order = append(mq.order, o...)
 	return mq
+}
+
+// QueryMetricNameMetrics chains the current query on the "MetricName_Metrics" edge.
+func (mq *MetricQuery) QueryMetricNameMetrics() *MetricNameQuery {
+	query := &MetricNameQuery{config: mq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := mq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := mq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(metric.Table, metric.FieldID, selector),
+			sqlgraph.To(metricname.Table, metricname.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, metric.MetricNameMetricsTable, metric.MetricNameMetricsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(mq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryMetricEndpointMetrics chains the current query on the "MetricEndpoint_Metrics" edge.
+func (mq *MetricQuery) QueryMetricEndpointMetrics() *MetricEndpointQuery {
+	query := &MetricEndpointQuery{config: mq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := mq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := mq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(metric.Table, metric.FieldID, selector),
+			sqlgraph.To(metricendpoint.Table, metricendpoint.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, metric.MetricEndpointMetricsTable, metric.MetricEndpointMetricsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(mq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryMetricLabelMetrics chains the current query on the "MetricLabel_Metrics" edge.
+func (mq *MetricQuery) QueryMetricLabelMetrics() *MetricLabelQuery {
+	query := &MetricLabelQuery{config: mq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := mq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := mq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(metric.Table, metric.FieldID, selector),
+			sqlgraph.To(metriclabel.Table, metriclabel.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, metric.MetricLabelMetricsTable, metric.MetricLabelMetricsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(mq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
 }
 
 // First returns the first Metric entity from the query.
@@ -237,15 +310,51 @@ func (mq *MetricQuery) Clone() *MetricQuery {
 		return nil
 	}
 	return &MetricQuery{
-		config:     mq.config,
-		limit:      mq.limit,
-		offset:     mq.offset,
-		order:      append([]OrderFunc{}, mq.order...),
-		predicates: append([]predicate.Metric{}, mq.predicates...),
+		config:                    mq.config,
+		limit:                     mq.limit,
+		offset:                    mq.offset,
+		order:                     append([]OrderFunc{}, mq.order...),
+		predicates:                append([]predicate.Metric{}, mq.predicates...),
+		withMetricNameMetrics:     mq.withMetricNameMetrics.Clone(),
+		withMetricEndpointMetrics: mq.withMetricEndpointMetrics.Clone(),
+		withMetricLabelMetrics:    mq.withMetricLabelMetrics.Clone(),
 		// clone intermediate query.
 		sql:  mq.sql.Clone(),
 		path: mq.path,
 	}
+}
+
+// WithMetricNameMetrics tells the query-builder to eager-load the nodes that are connected to
+// the "MetricName_Metrics" edge. The optional arguments are used to configure the query builder of the edge.
+func (mq *MetricQuery) WithMetricNameMetrics(opts ...func(*MetricNameQuery)) *MetricQuery {
+	query := &MetricNameQuery{config: mq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	mq.withMetricNameMetrics = query
+	return mq
+}
+
+// WithMetricEndpointMetrics tells the query-builder to eager-load the nodes that are connected to
+// the "MetricEndpoint_Metrics" edge. The optional arguments are used to configure the query builder of the edge.
+func (mq *MetricQuery) WithMetricEndpointMetrics(opts ...func(*MetricEndpointQuery)) *MetricQuery {
+	query := &MetricEndpointQuery{config: mq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	mq.withMetricEndpointMetrics = query
+	return mq
+}
+
+// WithMetricLabelMetrics tells the query-builder to eager-load the nodes that are connected to
+// the "MetricLabel_Metrics" edge. The optional arguments are used to configure the query builder of the edge.
+func (mq *MetricQuery) WithMetricLabelMetrics(opts ...func(*MetricLabelQuery)) *MetricQuery {
+	query := &MetricLabelQuery{config: mq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	mq.withMetricLabelMetrics = query
+	return mq
 }
 
 // GroupBy is used to group vertices by one or more fields/columns.
@@ -311,10 +420,18 @@ func (mq *MetricQuery) prepareQuery(ctx context.Context) error {
 
 func (mq *MetricQuery) sqlAll(ctx context.Context) ([]*Metric, error) {
 	var (
-		nodes   = []*Metric{}
-		withFKs = mq.withFKs
-		_spec   = mq.querySpec()
+		nodes       = []*Metric{}
+		withFKs     = mq.withFKs
+		_spec       = mq.querySpec()
+		loadedTypes = [3]bool{
+			mq.withMetricNameMetrics != nil,
+			mq.withMetricEndpointMetrics != nil,
+			mq.withMetricLabelMetrics != nil,
+		}
 	)
+	if mq.withMetricNameMetrics != nil || mq.withMetricEndpointMetrics != nil || mq.withMetricLabelMetrics != nil {
+		withFKs = true
+	}
 	if withFKs {
 		_spec.Node.Columns = append(_spec.Node.Columns, metric.ForeignKeys...)
 	}
@@ -328,6 +445,7 @@ func (mq *MetricQuery) sqlAll(ctx context.Context) ([]*Metric, error) {
 			return fmt.Errorf("ent: Assign called without calling ScanValues")
 		}
 		node := nodes[len(nodes)-1]
+		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
 	if err := sqlgraph.QueryNodes(ctx, mq.driver, _spec); err != nil {
@@ -336,6 +454,94 @@ func (mq *MetricQuery) sqlAll(ctx context.Context) ([]*Metric, error) {
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
+
+	if query := mq.withMetricNameMetrics; query != nil {
+		ids := make([]uint, 0, len(nodes))
+		nodeids := make(map[uint][]*Metric)
+		for i := range nodes {
+			if nodes[i].metric_name_metrics == nil {
+				continue
+			}
+			fk := *nodes[i].metric_name_metrics
+			if _, ok := nodeids[fk]; !ok {
+				ids = append(ids, fk)
+			}
+			nodeids[fk] = append(nodeids[fk], nodes[i])
+		}
+		query.Where(metricname.IDIn(ids...))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			nodes, ok := nodeids[n.ID]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "metric_name_metrics" returned %v`, n.ID)
+			}
+			for i := range nodes {
+				nodes[i].Edges.MetricNameMetrics = n
+			}
+		}
+	}
+
+	if query := mq.withMetricEndpointMetrics; query != nil {
+		ids := make([]uint, 0, len(nodes))
+		nodeids := make(map[uint][]*Metric)
+		for i := range nodes {
+			if nodes[i].metric_endpoint_metrics == nil {
+				continue
+			}
+			fk := *nodes[i].metric_endpoint_metrics
+			if _, ok := nodeids[fk]; !ok {
+				ids = append(ids, fk)
+			}
+			nodeids[fk] = append(nodeids[fk], nodes[i])
+		}
+		query.Where(metricendpoint.IDIn(ids...))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			nodes, ok := nodeids[n.ID]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "metric_endpoint_metrics" returned %v`, n.ID)
+			}
+			for i := range nodes {
+				nodes[i].Edges.MetricEndpointMetrics = n
+			}
+		}
+	}
+
+	if query := mq.withMetricLabelMetrics; query != nil {
+		ids := make([]uint, 0, len(nodes))
+		nodeids := make(map[uint][]*Metric)
+		for i := range nodes {
+			if nodes[i].metric_label_metrics == nil {
+				continue
+			}
+			fk := *nodes[i].metric_label_metrics
+			if _, ok := nodeids[fk]; !ok {
+				ids = append(ids, fk)
+			}
+			nodeids[fk] = append(nodeids[fk], nodes[i])
+		}
+		query.Where(metriclabel.IDIn(ids...))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			nodes, ok := nodeids[n.ID]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "metric_label_metrics" returned %v`, n.ID)
+			}
+			for i := range nodes {
+				nodes[i].Edges.MetricLabelMetrics = n
+			}
+		}
+	}
+
 	return nodes, nil
 }
 

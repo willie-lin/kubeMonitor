@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/agent"
+	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/cluster"
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/node"
 )
 
@@ -149,19 +150,38 @@ func (ac *AgentCreate) SetID(u uint) *AgentCreate {
 	return ac
 }
 
-// AddNodeIDs adds the "nodes" edge to the Node entity by IDs.
+// AddNodeIDs adds the "node" edge to the Node entity by IDs.
 func (ac *AgentCreate) AddNodeIDs(ids ...uint) *AgentCreate {
 	ac.mutation.AddNodeIDs(ids...)
 	return ac
 }
 
-// AddNodes adds the "nodes" edges to the Node entity.
-func (ac *AgentCreate) AddNodes(n ...*Node) *AgentCreate {
+// AddNode adds the "node" edges to the Node entity.
+func (ac *AgentCreate) AddNode(n ...*Node) *AgentCreate {
 	ids := make([]uint, len(n))
 	for i := range n {
 		ids[i] = n[i].ID
 	}
 	return ac.AddNodeIDs(ids...)
+}
+
+// SetOwnerID sets the "owner" edge to the Cluster entity by ID.
+func (ac *AgentCreate) SetOwnerID(id uint) *AgentCreate {
+	ac.mutation.SetOwnerID(id)
+	return ac
+}
+
+// SetNillableOwnerID sets the "owner" edge to the Cluster entity by ID if the given value is not nil.
+func (ac *AgentCreate) SetNillableOwnerID(id *uint) *AgentCreate {
+	if id != nil {
+		ac = ac.SetOwnerID(*id)
+	}
+	return ac
+}
+
+// SetOwner sets the "owner" edge to the Cluster entity.
+func (ac *AgentCreate) SetOwner(c *Cluster) *AgentCreate {
+	return ac.SetOwnerID(c.ID)
 }
 
 // Mutation returns the AgentMutation object of the builder.
@@ -488,12 +508,12 @@ func (ac *AgentCreate) createSpec() (*Agent, *sqlgraph.CreateSpec) {
 		})
 		_node.ClusterId = value
 	}
-	if nodes := ac.mutation.NodesIDs(); len(nodes) > 0 {
+	if nodes := ac.mutation.NodeIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
 			Inverse: false,
-			Table:   agent.NodesTable,
-			Columns: []string{agent.NodesColumn},
+			Table:   agent.NodeTable,
+			Columns: []string{agent.NodeColumn},
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: &sqlgraph.FieldSpec{
@@ -505,6 +525,26 @@ func (ac *AgentCreate) createSpec() (*Agent, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := ac.mutation.OwnerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   agent.OwnerTable,
+			Columns: []string{agent.OwnerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUint,
+					Column: cluster.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.cluster_agents = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

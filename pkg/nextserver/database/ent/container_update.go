@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/container"
+	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/node"
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/predicate"
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/proces"
 )
@@ -111,6 +112,25 @@ func (cu *ContainerUpdate) AddProcess(p ...*Proces) *ContainerUpdate {
 	return cu.AddProcesIDs(ids...)
 }
 
+// SetOwnerID sets the "owner" edge to the Node entity by ID.
+func (cu *ContainerUpdate) SetOwnerID(id uint) *ContainerUpdate {
+	cu.mutation.SetOwnerID(id)
+	return cu
+}
+
+// SetNillableOwnerID sets the "owner" edge to the Node entity by ID if the given value is not nil.
+func (cu *ContainerUpdate) SetNillableOwnerID(id *uint) *ContainerUpdate {
+	if id != nil {
+		cu = cu.SetOwnerID(*id)
+	}
+	return cu
+}
+
+// SetOwner sets the "owner" edge to the Node entity.
+func (cu *ContainerUpdate) SetOwner(n *Node) *ContainerUpdate {
+	return cu.SetOwnerID(n.ID)
+}
+
 // Mutation returns the ContainerMutation object of the builder.
 func (cu *ContainerUpdate) Mutation() *ContainerMutation {
 	return cu.mutation
@@ -135,6 +155,12 @@ func (cu *ContainerUpdate) RemoveProcess(p ...*Proces) *ContainerUpdate {
 		ids[i] = p[i].ID
 	}
 	return cu.RemoveProcesIDs(ids...)
+}
+
+// ClearOwner clears the "owner" edge to the Node entity.
+func (cu *ContainerUpdate) ClearOwner() *ContainerUpdate {
+	cu.mutation.ClearOwner()
+	return cu
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -379,6 +405,41 @@ func (cu *ContainerUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if cu.mutation.OwnerCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   container.OwnerTable,
+			Columns: []string{container.OwnerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUint,
+					Column: node.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := cu.mutation.OwnerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   container.OwnerTable,
+			Columns: []string{container.OwnerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUint,
+					Column: node.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, cu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{container.Label}
@@ -481,6 +542,25 @@ func (cuo *ContainerUpdateOne) AddProcess(p ...*Proces) *ContainerUpdateOne {
 	return cuo.AddProcesIDs(ids...)
 }
 
+// SetOwnerID sets the "owner" edge to the Node entity by ID.
+func (cuo *ContainerUpdateOne) SetOwnerID(id uint) *ContainerUpdateOne {
+	cuo.mutation.SetOwnerID(id)
+	return cuo
+}
+
+// SetNillableOwnerID sets the "owner" edge to the Node entity by ID if the given value is not nil.
+func (cuo *ContainerUpdateOne) SetNillableOwnerID(id *uint) *ContainerUpdateOne {
+	if id != nil {
+		cuo = cuo.SetOwnerID(*id)
+	}
+	return cuo
+}
+
+// SetOwner sets the "owner" edge to the Node entity.
+func (cuo *ContainerUpdateOne) SetOwner(n *Node) *ContainerUpdateOne {
+	return cuo.SetOwnerID(n.ID)
+}
+
 // Mutation returns the ContainerMutation object of the builder.
 func (cuo *ContainerUpdateOne) Mutation() *ContainerMutation {
 	return cuo.mutation
@@ -505,6 +585,12 @@ func (cuo *ContainerUpdateOne) RemoveProcess(p ...*Proces) *ContainerUpdateOne {
 		ids[i] = p[i].ID
 	}
 	return cuo.RemoveProcesIDs(ids...)
+}
+
+// ClearOwner clears the "owner" edge to the Node entity.
+func (cuo *ContainerUpdateOne) ClearOwner() *ContainerUpdateOne {
+	cuo.mutation.ClearOwner()
+	return cuo
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -765,6 +851,41 @@ func (cuo *ContainerUpdateOne) sqlSave(ctx context.Context) (_node *Container, e
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeUint,
 					Column: proces.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if cuo.mutation.OwnerCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   container.OwnerTable,
+			Columns: []string{container.OwnerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUint,
+					Column: node.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := cuo.mutation.OwnerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   container.OwnerTable,
+			Columns: []string{container.OwnerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUint,
+					Column: node.FieldID,
 				},
 			},
 		}

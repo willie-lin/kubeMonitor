@@ -39,6 +39,7 @@ func (Container) Fields() []ent.Field {
 func (Container) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("process", Proces.Type),
+		edge.From("owner", Node.Type).Ref("containers").Unique(),
 	}
 }
 
@@ -49,10 +50,8 @@ func (Container) Mixin() []ent.Mixin {
 	}
 }
 
-
 func (Container) Indexes() []ent.Index {
 	return []ent.Index{
-		index.Fields( "containerId", "clusterId", "nodeId"),
+		index.Fields("containerId", "clusterId", "nodeId"),
 	}
 }
-

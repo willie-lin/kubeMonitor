@@ -4,6 +4,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema"
+	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
 )
@@ -12,7 +13,6 @@ import (
 type Metric struct {
 	ent.Schema
 }
-
 
 // Annotations of the Cluster.
 func (Metric) Annotations() []schema.Annotation {
@@ -30,7 +30,7 @@ func (Metric) Mixin() []ent.Mixin {
 
 // Fields of the Metric.
 func (Metric) Fields() []ent.Field {
-	return []ent.Field {
+	return []ent.Field{
 		field.Time("ts"),
 		field.Float("value"),
 
@@ -48,12 +48,15 @@ func (Metric) Fields() []ent.Field {
 
 // Edges of the Metric.
 func (Metric) Edges() []ent.Edge {
-	return nil
+	return []ent.Edge{
+		edge.From("MetricName_Metrics", MetricName.Type).Ref("metrics").Unique(),
+		edge.From("MetricEndpoint_Metrics", MetricEndpoint.Type).Ref("metrics").Unique(),
+		edge.From("MetricLabel_Metrics", MetricLabel.Type).Ref("metrics").Unique(),
+	}
 }
 
-
-func (Metric) Indexes() []ent.Index  {
-	return []ent.Index {
+func (Metric) Indexes() []ent.Index {
+	return []ent.Index{
 		index.Fields("ts", "value", "endpointId",
 			"typeId", "nameId", "labelId", "clusterId",
 			"nodeId", "procesId", "containerId"),

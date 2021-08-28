@@ -11,6 +11,9 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/event"
+	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/metricendpoint"
+	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/metriclabel"
+	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/metricname"
 )
 
 // EventCreate is the builder for creating a Event entity.
@@ -144,6 +147,63 @@ func (ec *EventCreate) SetContainerId(u uint) *EventCreate {
 func (ec *EventCreate) SetPodId(u uint) *EventCreate {
 	ec.mutation.SetPodId(u)
 	return ec
+}
+
+// SetMetricNameEventsID sets the "MetricName_events" edge to the MetricName entity by ID.
+func (ec *EventCreate) SetMetricNameEventsID(id uint) *EventCreate {
+	ec.mutation.SetMetricNameEventsID(id)
+	return ec
+}
+
+// SetNillableMetricNameEventsID sets the "MetricName_events" edge to the MetricName entity by ID if the given value is not nil.
+func (ec *EventCreate) SetNillableMetricNameEventsID(id *uint) *EventCreate {
+	if id != nil {
+		ec = ec.SetMetricNameEventsID(*id)
+	}
+	return ec
+}
+
+// SetMetricNameEvents sets the "MetricName_events" edge to the MetricName entity.
+func (ec *EventCreate) SetMetricNameEvents(m *MetricName) *EventCreate {
+	return ec.SetMetricNameEventsID(m.ID)
+}
+
+// SetMetricLabelEventsID sets the "MetricLabel_events" edge to the MetricLabel entity by ID.
+func (ec *EventCreate) SetMetricLabelEventsID(id uint) *EventCreate {
+	ec.mutation.SetMetricLabelEventsID(id)
+	return ec
+}
+
+// SetNillableMetricLabelEventsID sets the "MetricLabel_events" edge to the MetricLabel entity by ID if the given value is not nil.
+func (ec *EventCreate) SetNillableMetricLabelEventsID(id *uint) *EventCreate {
+	if id != nil {
+		ec = ec.SetMetricLabelEventsID(*id)
+	}
+	return ec
+}
+
+// SetMetricLabelEvents sets the "MetricLabel_events" edge to the MetricLabel entity.
+func (ec *EventCreate) SetMetricLabelEvents(m *MetricLabel) *EventCreate {
+	return ec.SetMetricLabelEventsID(m.ID)
+}
+
+// SetMetricEndpointEventsID sets the "MetricEndpoint_events" edge to the MetricEndpoint entity by ID.
+func (ec *EventCreate) SetMetricEndpointEventsID(id uint) *EventCreate {
+	ec.mutation.SetMetricEndpointEventsID(id)
+	return ec
+}
+
+// SetNillableMetricEndpointEventsID sets the "MetricEndpoint_events" edge to the MetricEndpoint entity by ID if the given value is not nil.
+func (ec *EventCreate) SetNillableMetricEndpointEventsID(id *uint) *EventCreate {
+	if id != nil {
+		ec = ec.SetMetricEndpointEventsID(*id)
+	}
+	return ec
+}
+
+// SetMetricEndpointEvents sets the "MetricEndpoint_events" edge to the MetricEndpoint entity.
+func (ec *EventCreate) SetMetricEndpointEvents(m *MetricEndpoint) *EventCreate {
+	return ec.SetMetricEndpointEventsID(m.ID)
 }
 
 // Mutation returns the EventMutation object of the builder.
@@ -446,6 +506,66 @@ func (ec *EventCreate) createSpec() (*Event, *sqlgraph.CreateSpec) {
 			Column: event.FieldPodId,
 		})
 		_node.PodId = value
+	}
+	if nodes := ec.mutation.MetricNameEventsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   event.MetricNameEventsTable,
+			Columns: []string{event.MetricNameEventsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUint,
+					Column: metricname.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.metric_name_events = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := ec.mutation.MetricLabelEventsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   event.MetricLabelEventsTable,
+			Columns: []string{event.MetricLabelEventsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUint,
+					Column: metriclabel.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.metric_label_events = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := ec.mutation.MetricEndpointEventsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   event.MetricEndpointEventsTable,
+			Columns: []string{event.MetricEndpointEventsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUint,
+					Column: metricendpoint.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.metric_endpoint_events = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
 }

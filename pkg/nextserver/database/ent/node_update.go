@@ -10,6 +10,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/cluster"
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/container"
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/node"
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/predicate"
@@ -139,6 +140,25 @@ func (nu *NodeUpdate) AddClusterId(u uint) *NodeUpdate {
 	return nu
 }
 
+// SetOwnerID sets the "owner" edge to the Cluster entity by ID.
+func (nu *NodeUpdate) SetOwnerID(id uint) *NodeUpdate {
+	nu.mutation.SetOwnerID(id)
+	return nu
+}
+
+// SetNillableOwnerID sets the "owner" edge to the Cluster entity by ID if the given value is not nil.
+func (nu *NodeUpdate) SetNillableOwnerID(id *uint) *NodeUpdate {
+	if id != nil {
+		nu = nu.SetOwnerID(*id)
+	}
+	return nu
+}
+
+// SetOwner sets the "owner" edge to the Cluster entity.
+func (nu *NodeUpdate) SetOwner(c *Cluster) *NodeUpdate {
+	return nu.SetOwnerID(c.ID)
+}
+
 // AddContainerIDs adds the "containers" edge to the Container entity by IDs.
 func (nu *NodeUpdate) AddContainerIDs(ids ...uint) *NodeUpdate {
 	nu.mutation.AddContainerIDs(ids...)
@@ -172,6 +192,12 @@ func (nu *NodeUpdate) AddProcess(p ...*Proces) *NodeUpdate {
 // Mutation returns the NodeMutation object of the builder.
 func (nu *NodeUpdate) Mutation() *NodeMutation {
 	return nu.mutation
+}
+
+// ClearOwner clears the "owner" edge to the Cluster entity.
+func (nu *NodeUpdate) ClearOwner() *NodeUpdate {
+	nu.mutation.ClearOwner()
+	return nu
 }
 
 // ClearContainers clears all "containers" edges to the Container entity.
@@ -478,6 +504,41 @@ func (nu *NodeUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Column: node.FieldClusterId,
 		})
 	}
+	if nu.mutation.OwnerCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   node.OwnerTable,
+			Columns: []string{node.OwnerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUint,
+					Column: cluster.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := nu.mutation.OwnerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   node.OwnerTable,
+			Columns: []string{node.OwnerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUint,
+					Column: cluster.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if nu.mutation.ContainersCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -715,6 +776,25 @@ func (nuo *NodeUpdateOne) AddClusterId(u uint) *NodeUpdateOne {
 	return nuo
 }
 
+// SetOwnerID sets the "owner" edge to the Cluster entity by ID.
+func (nuo *NodeUpdateOne) SetOwnerID(id uint) *NodeUpdateOne {
+	nuo.mutation.SetOwnerID(id)
+	return nuo
+}
+
+// SetNillableOwnerID sets the "owner" edge to the Cluster entity by ID if the given value is not nil.
+func (nuo *NodeUpdateOne) SetNillableOwnerID(id *uint) *NodeUpdateOne {
+	if id != nil {
+		nuo = nuo.SetOwnerID(*id)
+	}
+	return nuo
+}
+
+// SetOwner sets the "owner" edge to the Cluster entity.
+func (nuo *NodeUpdateOne) SetOwner(c *Cluster) *NodeUpdateOne {
+	return nuo.SetOwnerID(c.ID)
+}
+
 // AddContainerIDs adds the "containers" edge to the Container entity by IDs.
 func (nuo *NodeUpdateOne) AddContainerIDs(ids ...uint) *NodeUpdateOne {
 	nuo.mutation.AddContainerIDs(ids...)
@@ -748,6 +828,12 @@ func (nuo *NodeUpdateOne) AddProcess(p ...*Proces) *NodeUpdateOne {
 // Mutation returns the NodeMutation object of the builder.
 func (nuo *NodeUpdateOne) Mutation() *NodeMutation {
 	return nuo.mutation
+}
+
+// ClearOwner clears the "owner" edge to the Cluster entity.
+func (nuo *NodeUpdateOne) ClearOwner() *NodeUpdateOne {
+	nuo.mutation.ClearOwner()
+	return nuo
 }
 
 // ClearContainers clears all "containers" edges to the Container entity.
@@ -1077,6 +1163,41 @@ func (nuo *NodeUpdateOne) sqlSave(ctx context.Context) (_node *Node, err error) 
 			Value:  value,
 			Column: node.FieldClusterId,
 		})
+	}
+	if nuo.mutation.OwnerCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   node.OwnerTable,
+			Columns: []string{node.OwnerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUint,
+					Column: cluster.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := nuo.mutation.OwnerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   node.OwnerTable,
+			Columns: []string{node.OwnerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUint,
+					Column: cluster.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if nuo.mutation.ContainersCleared() {
 		edge := &sqlgraph.EdgeSpec{

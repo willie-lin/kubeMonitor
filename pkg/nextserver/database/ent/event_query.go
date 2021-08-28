@@ -12,6 +12,9 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/event"
+	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/metricendpoint"
+	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/metriclabel"
+	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/metricname"
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/predicate"
 )
 
@@ -24,7 +27,11 @@ type EventQuery struct {
 	order      []OrderFunc
 	fields     []string
 	predicates []predicate.Event
-	withFKs    bool
+	// eager-loading edges.
+	withMetricNameEvents     *MetricNameQuery
+	withMetricLabelEvents    *MetricLabelQuery
+	withMetricEndpointEvents *MetricEndpointQuery
+	withFKs                  bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -59,6 +66,72 @@ func (eq *EventQuery) Unique(unique bool) *EventQuery {
 func (eq *EventQuery) Order(o ...OrderFunc) *EventQuery {
 	eq.order = append(eq.order, o...)
 	return eq
+}
+
+// QueryMetricNameEvents chains the current query on the "MetricName_events" edge.
+func (eq *EventQuery) QueryMetricNameEvents() *MetricNameQuery {
+	query := &MetricNameQuery{config: eq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := eq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := eq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(event.Table, event.FieldID, selector),
+			sqlgraph.To(metricname.Table, metricname.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, event.MetricNameEventsTable, event.MetricNameEventsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(eq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryMetricLabelEvents chains the current query on the "MetricLabel_events" edge.
+func (eq *EventQuery) QueryMetricLabelEvents() *MetricLabelQuery {
+	query := &MetricLabelQuery{config: eq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := eq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := eq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(event.Table, event.FieldID, selector),
+			sqlgraph.To(metriclabel.Table, metriclabel.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, event.MetricLabelEventsTable, event.MetricLabelEventsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(eq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryMetricEndpointEvents chains the current query on the "MetricEndpoint_events" edge.
+func (eq *EventQuery) QueryMetricEndpointEvents() *MetricEndpointQuery {
+	query := &MetricEndpointQuery{config: eq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := eq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := eq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(event.Table, event.FieldID, selector),
+			sqlgraph.To(metricendpoint.Table, metricendpoint.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, event.MetricEndpointEventsTable, event.MetricEndpointEventsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(eq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
 }
 
 // First returns the first Event entity from the query.
@@ -237,15 +310,51 @@ func (eq *EventQuery) Clone() *EventQuery {
 		return nil
 	}
 	return &EventQuery{
-		config:     eq.config,
-		limit:      eq.limit,
-		offset:     eq.offset,
-		order:      append([]OrderFunc{}, eq.order...),
-		predicates: append([]predicate.Event{}, eq.predicates...),
+		config:                   eq.config,
+		limit:                    eq.limit,
+		offset:                   eq.offset,
+		order:                    append([]OrderFunc{}, eq.order...),
+		predicates:               append([]predicate.Event{}, eq.predicates...),
+		withMetricNameEvents:     eq.withMetricNameEvents.Clone(),
+		withMetricLabelEvents:    eq.withMetricLabelEvents.Clone(),
+		withMetricEndpointEvents: eq.withMetricEndpointEvents.Clone(),
 		// clone intermediate query.
 		sql:  eq.sql.Clone(),
 		path: eq.path,
 	}
+}
+
+// WithMetricNameEvents tells the query-builder to eager-load the nodes that are connected to
+// the "MetricName_events" edge. The optional arguments are used to configure the query builder of the edge.
+func (eq *EventQuery) WithMetricNameEvents(opts ...func(*MetricNameQuery)) *EventQuery {
+	query := &MetricNameQuery{config: eq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	eq.withMetricNameEvents = query
+	return eq
+}
+
+// WithMetricLabelEvents tells the query-builder to eager-load the nodes that are connected to
+// the "MetricLabel_events" edge. The optional arguments are used to configure the query builder of the edge.
+func (eq *EventQuery) WithMetricLabelEvents(opts ...func(*MetricLabelQuery)) *EventQuery {
+	query := &MetricLabelQuery{config: eq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	eq.withMetricLabelEvents = query
+	return eq
+}
+
+// WithMetricEndpointEvents tells the query-builder to eager-load the nodes that are connected to
+// the "MetricEndpoint_events" edge. The optional arguments are used to configure the query builder of the edge.
+func (eq *EventQuery) WithMetricEndpointEvents(opts ...func(*MetricEndpointQuery)) *EventQuery {
+	query := &MetricEndpointQuery{config: eq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	eq.withMetricEndpointEvents = query
+	return eq
 }
 
 // GroupBy is used to group vertices by one or more fields/columns.
@@ -311,10 +420,18 @@ func (eq *EventQuery) prepareQuery(ctx context.Context) error {
 
 func (eq *EventQuery) sqlAll(ctx context.Context) ([]*Event, error) {
 	var (
-		nodes   = []*Event{}
-		withFKs = eq.withFKs
-		_spec   = eq.querySpec()
+		nodes       = []*Event{}
+		withFKs     = eq.withFKs
+		_spec       = eq.querySpec()
+		loadedTypes = [3]bool{
+			eq.withMetricNameEvents != nil,
+			eq.withMetricLabelEvents != nil,
+			eq.withMetricEndpointEvents != nil,
+		}
 	)
+	if eq.withMetricNameEvents != nil || eq.withMetricLabelEvents != nil || eq.withMetricEndpointEvents != nil {
+		withFKs = true
+	}
 	if withFKs {
 		_spec.Node.Columns = append(_spec.Node.Columns, event.ForeignKeys...)
 	}
@@ -328,6 +445,7 @@ func (eq *EventQuery) sqlAll(ctx context.Context) ([]*Event, error) {
 			return fmt.Errorf("ent: Assign called without calling ScanValues")
 		}
 		node := nodes[len(nodes)-1]
+		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
 	if err := sqlgraph.QueryNodes(ctx, eq.driver, _spec); err != nil {
@@ -336,6 +454,94 @@ func (eq *EventQuery) sqlAll(ctx context.Context) ([]*Event, error) {
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
+
+	if query := eq.withMetricNameEvents; query != nil {
+		ids := make([]uint, 0, len(nodes))
+		nodeids := make(map[uint][]*Event)
+		for i := range nodes {
+			if nodes[i].metric_name_events == nil {
+				continue
+			}
+			fk := *nodes[i].metric_name_events
+			if _, ok := nodeids[fk]; !ok {
+				ids = append(ids, fk)
+			}
+			nodeids[fk] = append(nodeids[fk], nodes[i])
+		}
+		query.Where(metricname.IDIn(ids...))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			nodes, ok := nodeids[n.ID]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "metric_name_events" returned %v`, n.ID)
+			}
+			for i := range nodes {
+				nodes[i].Edges.MetricNameEvents = n
+			}
+		}
+	}
+
+	if query := eq.withMetricLabelEvents; query != nil {
+		ids := make([]uint, 0, len(nodes))
+		nodeids := make(map[uint][]*Event)
+		for i := range nodes {
+			if nodes[i].metric_label_events == nil {
+				continue
+			}
+			fk := *nodes[i].metric_label_events
+			if _, ok := nodeids[fk]; !ok {
+				ids = append(ids, fk)
+			}
+			nodeids[fk] = append(nodeids[fk], nodes[i])
+		}
+		query.Where(metriclabel.IDIn(ids...))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			nodes, ok := nodeids[n.ID]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "metric_label_events" returned %v`, n.ID)
+			}
+			for i := range nodes {
+				nodes[i].Edges.MetricLabelEvents = n
+			}
+		}
+	}
+
+	if query := eq.withMetricEndpointEvents; query != nil {
+		ids := make([]uint, 0, len(nodes))
+		nodeids := make(map[uint][]*Event)
+		for i := range nodes {
+			if nodes[i].metric_endpoint_events == nil {
+				continue
+			}
+			fk := *nodes[i].metric_endpoint_events
+			if _, ok := nodeids[fk]; !ok {
+				ids = append(ids, fk)
+			}
+			nodeids[fk] = append(nodeids[fk], nodes[i])
+		}
+		query.Where(metricendpoint.IDIn(ids...))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			nodes, ok := nodeids[n.ID]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "metric_endpoint_events" returned %v`, n.ID)
+			}
+			for i := range nodes {
+				nodes[i].Edges.MetricEndpointEvents = n
+			}
+		}
+	}
+
 	return nodes, nil
 }
 

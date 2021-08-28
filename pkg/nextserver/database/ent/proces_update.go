@@ -10,6 +10,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/container"
+	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/node"
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/predicate"
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/proces"
 )
@@ -88,9 +90,59 @@ func (pu *ProcesUpdate) SetContainerId(s string) *ProcesUpdate {
 	return pu
 }
 
+// SetNodeProcessID sets the "node_process" edge to the Node entity by ID.
+func (pu *ProcesUpdate) SetNodeProcessID(id uint) *ProcesUpdate {
+	pu.mutation.SetNodeProcessID(id)
+	return pu
+}
+
+// SetNillableNodeProcessID sets the "node_process" edge to the Node entity by ID if the given value is not nil.
+func (pu *ProcesUpdate) SetNillableNodeProcessID(id *uint) *ProcesUpdate {
+	if id != nil {
+		pu = pu.SetNodeProcessID(*id)
+	}
+	return pu
+}
+
+// SetNodeProcess sets the "node_process" edge to the Node entity.
+func (pu *ProcesUpdate) SetNodeProcess(n *Node) *ProcesUpdate {
+	return pu.SetNodeProcessID(n.ID)
+}
+
+// SetContainerProcessID sets the "container_process" edge to the Container entity by ID.
+func (pu *ProcesUpdate) SetContainerProcessID(id uint) *ProcesUpdate {
+	pu.mutation.SetContainerProcessID(id)
+	return pu
+}
+
+// SetNillableContainerProcessID sets the "container_process" edge to the Container entity by ID if the given value is not nil.
+func (pu *ProcesUpdate) SetNillableContainerProcessID(id *uint) *ProcesUpdate {
+	if id != nil {
+		pu = pu.SetContainerProcessID(*id)
+	}
+	return pu
+}
+
+// SetContainerProcess sets the "container_process" edge to the Container entity.
+func (pu *ProcesUpdate) SetContainerProcess(c *Container) *ProcesUpdate {
+	return pu.SetContainerProcessID(c.ID)
+}
+
 // Mutation returns the ProcesMutation object of the builder.
 func (pu *ProcesUpdate) Mutation() *ProcesMutation {
 	return pu.mutation
+}
+
+// ClearNodeProcess clears the "node_process" edge to the Node entity.
+func (pu *ProcesUpdate) ClearNodeProcess() *ProcesUpdate {
+	pu.mutation.ClearNodeProcess()
+	return pu
+}
+
+// ClearContainerProcess clears the "container_process" edge to the Container entity.
+func (pu *ProcesUpdate) ClearContainerProcess() *ProcesUpdate {
+	pu.mutation.ClearContainerProcess()
+	return pu
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -248,6 +300,76 @@ func (pu *ProcesUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Column: proces.FieldContainerId,
 		})
 	}
+	if pu.mutation.NodeProcessCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   proces.NodeProcessTable,
+			Columns: []string{proces.NodeProcessColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUint,
+					Column: node.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := pu.mutation.NodeProcessIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   proces.NodeProcessTable,
+			Columns: []string{proces.NodeProcessColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUint,
+					Column: node.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if pu.mutation.ContainerProcessCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   proces.ContainerProcessTable,
+			Columns: []string{proces.ContainerProcessColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUint,
+					Column: container.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := pu.mutation.ContainerProcessIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   proces.ContainerProcessTable,
+			Columns: []string{proces.ContainerProcessColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUint,
+					Column: container.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, pu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{proces.Label}
@@ -328,9 +450,59 @@ func (puo *ProcesUpdateOne) SetContainerId(s string) *ProcesUpdateOne {
 	return puo
 }
 
+// SetNodeProcessID sets the "node_process" edge to the Node entity by ID.
+func (puo *ProcesUpdateOne) SetNodeProcessID(id uint) *ProcesUpdateOne {
+	puo.mutation.SetNodeProcessID(id)
+	return puo
+}
+
+// SetNillableNodeProcessID sets the "node_process" edge to the Node entity by ID if the given value is not nil.
+func (puo *ProcesUpdateOne) SetNillableNodeProcessID(id *uint) *ProcesUpdateOne {
+	if id != nil {
+		puo = puo.SetNodeProcessID(*id)
+	}
+	return puo
+}
+
+// SetNodeProcess sets the "node_process" edge to the Node entity.
+func (puo *ProcesUpdateOne) SetNodeProcess(n *Node) *ProcesUpdateOne {
+	return puo.SetNodeProcessID(n.ID)
+}
+
+// SetContainerProcessID sets the "container_process" edge to the Container entity by ID.
+func (puo *ProcesUpdateOne) SetContainerProcessID(id uint) *ProcesUpdateOne {
+	puo.mutation.SetContainerProcessID(id)
+	return puo
+}
+
+// SetNillableContainerProcessID sets the "container_process" edge to the Container entity by ID if the given value is not nil.
+func (puo *ProcesUpdateOne) SetNillableContainerProcessID(id *uint) *ProcesUpdateOne {
+	if id != nil {
+		puo = puo.SetContainerProcessID(*id)
+	}
+	return puo
+}
+
+// SetContainerProcess sets the "container_process" edge to the Container entity.
+func (puo *ProcesUpdateOne) SetContainerProcess(c *Container) *ProcesUpdateOne {
+	return puo.SetContainerProcessID(c.ID)
+}
+
 // Mutation returns the ProcesMutation object of the builder.
 func (puo *ProcesUpdateOne) Mutation() *ProcesMutation {
 	return puo.mutation
+}
+
+// ClearNodeProcess clears the "node_process" edge to the Node entity.
+func (puo *ProcesUpdateOne) ClearNodeProcess() *ProcesUpdateOne {
+	puo.mutation.ClearNodeProcess()
+	return puo
+}
+
+// ClearContainerProcess clears the "container_process" edge to the Container entity.
+func (puo *ProcesUpdateOne) ClearContainerProcess() *ProcesUpdateOne {
+	puo.mutation.ClearContainerProcess()
+	return puo
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -511,6 +683,76 @@ func (puo *ProcesUpdateOne) sqlSave(ctx context.Context) (_node *Proces, err err
 			Value:  value,
 			Column: proces.FieldContainerId,
 		})
+	}
+	if puo.mutation.NodeProcessCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   proces.NodeProcessTable,
+			Columns: []string{proces.NodeProcessColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUint,
+					Column: node.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := puo.mutation.NodeProcessIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   proces.NodeProcessTable,
+			Columns: []string{proces.NodeProcessColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUint,
+					Column: node.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if puo.mutation.ContainerProcessCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   proces.ContainerProcessTable,
+			Columns: []string{proces.ContainerProcessColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUint,
+					Column: container.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := puo.mutation.ContainerProcessIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   proces.ContainerProcessTable,
+			Columns: []string{proces.ContainerProcessColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUint,
+					Column: container.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &Proces{config: puo.config}
 	_spec.Assign = _node.assignValues

@@ -606,7 +606,7 @@ var (
 		{Name: "disabled", Type: field.TypeBool},
 		{Name: "agent_id", Type: field.TypeUint},
 		{Name: "cluster_id", Type: field.TypeUint},
-		{Name: "agent_nodes", Type: field.TypeUint, Nullable: true},
+		{Name: "agent_node", Type: field.TypeUint, Nullable: true},
 		{Name: "cluster_nodes", Type: field.TypeUint, Nullable: true},
 	}
 	// NodesTable holds the schema information for the "nodes" table.
@@ -616,7 +616,7 @@ var (
 		PrimaryKey: []*schema.Column{NodesColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{
 			{
-				Symbol:     "nodes_agents_nodes",
+				Symbol:     "nodes_agents_node",
 				Columns:    []*schema.Column{NodesColumns[18]},
 				RefColumns: []*schema.Column{AgentsColumns[0]},
 				OnDelete:   schema.SetNull,

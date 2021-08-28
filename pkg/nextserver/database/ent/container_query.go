@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/container"
+	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/node"
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/predicate"
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/proces"
 )
@@ -28,6 +29,7 @@ type ContainerQuery struct {
 	predicates []predicate.Container
 	// eager-loading edges.
 	withProcess *ProcesQuery
+	withOwner   *NodeQuery
 	withFKs     bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -80,6 +82,28 @@ func (cq *ContainerQuery) QueryProcess() *ProcesQuery {
 			sqlgraph.From(container.Table, container.FieldID, selector),
 			sqlgraph.To(proces.Table, proces.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, container.ProcessTable, container.ProcessColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(cq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryOwner chains the current query on the "owner" edge.
+func (cq *ContainerQuery) QueryOwner() *NodeQuery {
+	query := &NodeQuery{config: cq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := cq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := cq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(container.Table, container.FieldID, selector),
+			sqlgraph.To(node.Table, node.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, container.OwnerTable, container.OwnerColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(cq.driver.Dialect(), step)
 		return fromU, nil
@@ -269,6 +293,7 @@ func (cq *ContainerQuery) Clone() *ContainerQuery {
 		order:       append([]OrderFunc{}, cq.order...),
 		predicates:  append([]predicate.Container{}, cq.predicates...),
 		withProcess: cq.withProcess.Clone(),
+		withOwner:   cq.withOwner.Clone(),
 		// clone intermediate query.
 		sql:  cq.sql.Clone(),
 		path: cq.path,
@@ -283,6 +308,17 @@ func (cq *ContainerQuery) WithProcess(opts ...func(*ProcesQuery)) *ContainerQuer
 		opt(query)
 	}
 	cq.withProcess = query
+	return cq
+}
+
+// WithOwner tells the query-builder to eager-load the nodes that are connected to
+// the "owner" edge. The optional arguments are used to configure the query builder of the edge.
+func (cq *ContainerQuery) WithOwner(opts ...func(*NodeQuery)) *ContainerQuery {
+	query := &NodeQuery{config: cq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	cq.withOwner = query
 	return cq
 }
 
@@ -352,10 +388,14 @@ func (cq *ContainerQuery) sqlAll(ctx context.Context) ([]*Container, error) {
 		nodes       = []*Container{}
 		withFKs     = cq.withFKs
 		_spec       = cq.querySpec()
-		loadedTypes = [1]bool{
+		loadedTypes = [2]bool{
 			cq.withProcess != nil,
+			cq.withOwner != nil,
 		}
 	)
+	if cq.withOwner != nil {
+		withFKs = true
+	}
 	if withFKs {
 		_spec.Node.Columns = append(_spec.Node.Columns, container.ForeignKeys...)
 	}
@@ -405,6 +445,35 @@ func (cq *ContainerQuery) sqlAll(ctx context.Context) ([]*Container, error) {
 				return nil, fmt.Errorf(`unexpected foreign-key "container_process" returned %v for node %v`, *fk, n.ID)
 			}
 			node.Edges.Process = append(node.Edges.Process, n)
+		}
+	}
+
+	if query := cq.withOwner; query != nil {
+		ids := make([]uint, 0, len(nodes))
+		nodeids := make(map[uint][]*Container)
+		for i := range nodes {
+			if nodes[i].node_containers == nil {
+				continue
+			}
+			fk := *nodes[i].node_containers
+			if _, ok := nodeids[fk]; !ok {
+				ids = append(ids, fk)
+			}
+			nodeids[fk] = append(nodeids[fk], nodes[i])
+		}
+		query.Where(node.IDIn(ids...))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			nodes, ok := nodeids[n.ID]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "node_containers" returned %v`, n.ID)
+			}
+			for i := range nodes {
+				nodes[i].Edges.Owner = n
+			}
 		}
 	}
 

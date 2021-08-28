@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"entgo.io/ent/dialect/sql"
+	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/cluster"
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/node"
 )
 
@@ -54,25 +55,41 @@ type Node struct {
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the NodeQuery when eager-loading is set.
 	Edges         NodeEdges `json:"edges"`
-	agent_nodes   *uint
+	agent_node    *uint
 	cluster_nodes *uint
 }
 
 // NodeEdges holds the relations/edges for other nodes in the graph.
 type NodeEdges struct {
+	// Owner holds the value of the owner edge.
+	Owner *Cluster `json:"owner,omitempty"`
 	// Containers holds the value of the containers edge.
 	Containers []*Container `json:"containers,omitempty"`
 	// Process holds the value of the process edge.
 	Process []*Proces `json:"process,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
+}
+
+// OwnerOrErr returns the Owner value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e NodeEdges) OwnerOrErr() (*Cluster, error) {
+	if e.loadedTypes[0] {
+		if e.Owner == nil {
+			// The edge owner was loaded in eager-loading,
+			// but was not found.
+			return nil, &NotFoundError{label: cluster.Label}
+		}
+		return e.Owner, nil
+	}
+	return nil, &NotLoadedError{edge: "owner"}
 }
 
 // ContainersOrErr returns the Containers value or an error if the edge
 // was not loaded in eager-loading.
 func (e NodeEdges) ContainersOrErr() ([]*Container, error) {
-	if e.loadedTypes[0] {
+	if e.loadedTypes[1] {
 		return e.Containers, nil
 	}
 	return nil, &NotLoadedError{edge: "containers"}
@@ -81,7 +98,7 @@ func (e NodeEdges) ContainersOrErr() ([]*Container, error) {
 // ProcessOrErr returns the Process value or an error if the edge
 // was not loaded in eager-loading.
 func (e NodeEdges) ProcessOrErr() ([]*Proces, error) {
-	if e.loadedTypes[1] {
+	if e.loadedTypes[2] {
 		return e.Process, nil
 	}
 	return nil, &NotLoadedError{edge: "process"}
@@ -102,7 +119,7 @@ func (*Node) scanValues(columns []string) ([]interface{}, error) {
 			values[i] = new(sql.NullString)
 		case node.FieldCreatedAt, node.FieldUpdatedAt, node.FieldDeletedAt:
 			values[i] = new(sql.NullTime)
-		case node.ForeignKeys[0]: // agent_nodes
+		case node.ForeignKeys[0]: // agent_node
 			values[i] = new(sql.NullInt64)
 		case node.ForeignKeys[1]: // cluster_nodes
 			values[i] = new(sql.NullInt64)
@@ -233,10 +250,10 @@ func (n *Node) assignValues(columns []string, values []interface{}) error {
 			}
 		case node.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for edge-field agent_nodes", value)
+				return fmt.Errorf("unexpected type %T for edge-field agent_node", value)
 			} else if value.Valid {
-				n.agent_nodes = new(uint)
-				*n.agent_nodes = uint(value.Int64)
+				n.agent_node = new(uint)
+				*n.agent_node = uint(value.Int64)
 			}
 		case node.ForeignKeys[1]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -248,6 +265,11 @@ func (n *Node) assignValues(columns []string, values []interface{}) error {
 		}
 	}
 	return nil
+}
+
+// QueryOwner queries the "owner" edge of the Node entity.
+func (n *Node) QueryOwner() *ClusterQuery {
+	return (&NodeClient{config: n.config}).QueryOwner(n)
 }
 
 // QueryContainers queries the "containers" edge of the Node entity.

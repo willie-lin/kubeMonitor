@@ -11,6 +11,9 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/metric"
+	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/metricendpoint"
+	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/metriclabel"
+	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/metricname"
 )
 
 // MetricCreate is the builder for creating a Metric entity.
@@ -120,6 +123,63 @@ func (mc *MetricCreate) SetProcesId(u uint) *MetricCreate {
 func (mc *MetricCreate) SetContainerId(u uint) *MetricCreate {
 	mc.mutation.SetContainerId(u)
 	return mc
+}
+
+// SetMetricNameMetricsID sets the "MetricName_Metrics" edge to the MetricName entity by ID.
+func (mc *MetricCreate) SetMetricNameMetricsID(id uint) *MetricCreate {
+	mc.mutation.SetMetricNameMetricsID(id)
+	return mc
+}
+
+// SetNillableMetricNameMetricsID sets the "MetricName_Metrics" edge to the MetricName entity by ID if the given value is not nil.
+func (mc *MetricCreate) SetNillableMetricNameMetricsID(id *uint) *MetricCreate {
+	if id != nil {
+		mc = mc.SetMetricNameMetricsID(*id)
+	}
+	return mc
+}
+
+// SetMetricNameMetrics sets the "MetricName_Metrics" edge to the MetricName entity.
+func (mc *MetricCreate) SetMetricNameMetrics(m *MetricName) *MetricCreate {
+	return mc.SetMetricNameMetricsID(m.ID)
+}
+
+// SetMetricEndpointMetricsID sets the "MetricEndpoint_Metrics" edge to the MetricEndpoint entity by ID.
+func (mc *MetricCreate) SetMetricEndpointMetricsID(id uint) *MetricCreate {
+	mc.mutation.SetMetricEndpointMetricsID(id)
+	return mc
+}
+
+// SetNillableMetricEndpointMetricsID sets the "MetricEndpoint_Metrics" edge to the MetricEndpoint entity by ID if the given value is not nil.
+func (mc *MetricCreate) SetNillableMetricEndpointMetricsID(id *uint) *MetricCreate {
+	if id != nil {
+		mc = mc.SetMetricEndpointMetricsID(*id)
+	}
+	return mc
+}
+
+// SetMetricEndpointMetrics sets the "MetricEndpoint_Metrics" edge to the MetricEndpoint entity.
+func (mc *MetricCreate) SetMetricEndpointMetrics(m *MetricEndpoint) *MetricCreate {
+	return mc.SetMetricEndpointMetricsID(m.ID)
+}
+
+// SetMetricLabelMetricsID sets the "MetricLabel_Metrics" edge to the MetricLabel entity by ID.
+func (mc *MetricCreate) SetMetricLabelMetricsID(id uint) *MetricCreate {
+	mc.mutation.SetMetricLabelMetricsID(id)
+	return mc
+}
+
+// SetNillableMetricLabelMetricsID sets the "MetricLabel_Metrics" edge to the MetricLabel entity by ID if the given value is not nil.
+func (mc *MetricCreate) SetNillableMetricLabelMetricsID(id *uint) *MetricCreate {
+	if id != nil {
+		mc = mc.SetMetricLabelMetricsID(*id)
+	}
+	return mc
+}
+
+// SetMetricLabelMetrics sets the "MetricLabel_Metrics" edge to the MetricLabel entity.
+func (mc *MetricCreate) SetMetricLabelMetrics(m *MetricLabel) *MetricCreate {
+	return mc.SetMetricLabelMetricsID(m.ID)
 }
 
 // Mutation returns the MetricMutation object of the builder.
@@ -378,6 +438,66 @@ func (mc *MetricCreate) createSpec() (*Metric, *sqlgraph.CreateSpec) {
 			Column: metric.FieldContainerId,
 		})
 		_node.ContainerId = value
+	}
+	if nodes := mc.mutation.MetricNameMetricsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   metric.MetricNameMetricsTable,
+			Columns: []string{metric.MetricNameMetricsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUint,
+					Column: metricname.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.metric_name_metrics = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := mc.mutation.MetricEndpointMetricsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   metric.MetricEndpointMetricsTable,
+			Columns: []string{metric.MetricEndpointMetricsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUint,
+					Column: metricendpoint.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.metric_endpoint_metrics = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := mc.mutation.MetricLabelMetricsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   metric.MetricLabelMetricsTable,
+			Columns: []string{metric.MetricLabelMetricsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUint,
+					Column: metriclabel.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.metric_label_metrics = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
 }

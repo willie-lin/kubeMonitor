@@ -9,6 +9,7 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/agent"
+	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/cluster"
 )
 
 // Agent is the model entity for the Agent schema.
@@ -54,20 +55,36 @@ type Agent struct {
 
 // AgentEdges holds the relations/edges for other nodes in the graph.
 type AgentEdges struct {
-	// Nodes holds the value of the nodes edge.
-	Nodes []*Node `json:"nodes,omitempty"`
+	// Node holds the value of the node edge.
+	Node []*Node `json:"node,omitempty"`
+	// Owner holds the value of the owner edge.
+	Owner *Cluster `json:"owner,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
+	loadedTypes [2]bool
 }
 
-// NodesOrErr returns the Nodes value or an error if the edge
+// NodeOrErr returns the Node value or an error if the edge
 // was not loaded in eager-loading.
-func (e AgentEdges) NodesOrErr() ([]*Node, error) {
+func (e AgentEdges) NodeOrErr() ([]*Node, error) {
 	if e.loadedTypes[0] {
-		return e.Nodes, nil
+		return e.Node, nil
 	}
-	return nil, &NotLoadedError{edge: "nodes"}
+	return nil, &NotLoadedError{edge: "node"}
+}
+
+// OwnerOrErr returns the Owner value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e AgentEdges) OwnerOrErr() (*Cluster, error) {
+	if e.loadedTypes[1] {
+		if e.Owner == nil {
+			// The edge owner was loaded in eager-loading,
+			// but was not found.
+			return nil, &NotFoundError{label: cluster.Label}
+		}
+		return e.Owner, nil
+	}
+	return nil, &NotLoadedError{edge: "owner"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -208,9 +225,14 @@ func (a *Agent) assignValues(columns []string, values []interface{}) error {
 	return nil
 }
 
-// QueryNodes queries the "nodes" edge of the Agent entity.
-func (a *Agent) QueryNodes() *NodeQuery {
-	return (&AgentClient{config: a.config}).QueryNodes(a)
+// QueryNode queries the "node" edge of the Agent entity.
+func (a *Agent) QueryNode() *NodeQuery {
+	return (&AgentClient{config: a.config}).QueryNode(a)
+}
+
+// QueryOwner queries the "owner" edge of the Agent entity.
+func (a *Agent) QueryOwner() *ClusterQuery {
+	return (&AgentClient{config: a.config}).QueryOwner(a)
 }
 
 // Update returns a builder for updating this Agent.

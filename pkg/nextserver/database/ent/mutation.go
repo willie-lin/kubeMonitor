@@ -105,9 +105,11 @@ type AgentMutation struct {
 	clusterId     *uint
 	addclusterId  *uint
 	clearedFields map[string]struct{}
-	nodes         map[uint]struct{}
-	removednodes  map[uint]struct{}
-	clearednodes  bool
+	node          map[uint]struct{}
+	removednode   map[uint]struct{}
+	clearednode   bool
+	owner         *uint
+	clearedowner  bool
 	done          bool
 	oldValue      func(context.Context) (*Agent, error)
 	predicates    []predicate.Agent
@@ -758,58 +760,97 @@ func (m *AgentMutation) ResetClusterId() {
 	m.addclusterId = nil
 }
 
-// AddNodeIDs adds the "nodes" edge to the Node entity by ids.
+// AddNodeIDs adds the "node" edge to the Node entity by ids.
 func (m *AgentMutation) AddNodeIDs(ids ...uint) {
-	if m.nodes == nil {
-		m.nodes = make(map[uint]struct{})
+	if m.node == nil {
+		m.node = make(map[uint]struct{})
 	}
 	for i := range ids {
-		m.nodes[ids[i]] = struct{}{}
+		m.node[ids[i]] = struct{}{}
 	}
 }
 
-// ClearNodes clears the "nodes" edge to the Node entity.
-func (m *AgentMutation) ClearNodes() {
-	m.clearednodes = true
+// ClearNode clears the "node" edge to the Node entity.
+func (m *AgentMutation) ClearNode() {
+	m.clearednode = true
 }
 
-// NodesCleared reports if the "nodes" edge to the Node entity was cleared.
-func (m *AgentMutation) NodesCleared() bool {
-	return m.clearednodes
+// NodeCleared reports if the "node" edge to the Node entity was cleared.
+func (m *AgentMutation) NodeCleared() bool {
+	return m.clearednode
 }
 
-// RemoveNodeIDs removes the "nodes" edge to the Node entity by IDs.
+// RemoveNodeIDs removes the "node" edge to the Node entity by IDs.
 func (m *AgentMutation) RemoveNodeIDs(ids ...uint) {
-	if m.removednodes == nil {
-		m.removednodes = make(map[uint]struct{})
+	if m.removednode == nil {
+		m.removednode = make(map[uint]struct{})
 	}
 	for i := range ids {
-		delete(m.nodes, ids[i])
-		m.removednodes[ids[i]] = struct{}{}
+		delete(m.node, ids[i])
+		m.removednode[ids[i]] = struct{}{}
 	}
 }
 
-// RemovedNodes returns the removed IDs of the "nodes" edge to the Node entity.
-func (m *AgentMutation) RemovedNodesIDs() (ids []uint) {
-	for id := range m.removednodes {
+// RemovedNode returns the removed IDs of the "node" edge to the Node entity.
+func (m *AgentMutation) RemovedNodeIDs() (ids []uint) {
+	for id := range m.removednode {
 		ids = append(ids, id)
 	}
 	return
 }
 
-// NodesIDs returns the "nodes" edge IDs in the mutation.
-func (m *AgentMutation) NodesIDs() (ids []uint) {
-	for id := range m.nodes {
+// NodeIDs returns the "node" edge IDs in the mutation.
+func (m *AgentMutation) NodeIDs() (ids []uint) {
+	for id := range m.node {
 		ids = append(ids, id)
 	}
 	return
 }
 
-// ResetNodes resets all changes to the "nodes" edge.
-func (m *AgentMutation) ResetNodes() {
-	m.nodes = nil
-	m.clearednodes = false
-	m.removednodes = nil
+// ResetNode resets all changes to the "node" edge.
+func (m *AgentMutation) ResetNode() {
+	m.node = nil
+	m.clearednode = false
+	m.removednode = nil
+}
+
+// SetOwnerID sets the "owner" edge to the Cluster entity by id.
+func (m *AgentMutation) SetOwnerID(id uint) {
+	m.owner = &id
+}
+
+// ClearOwner clears the "owner" edge to the Cluster entity.
+func (m *AgentMutation) ClearOwner() {
+	m.clearedowner = true
+}
+
+// OwnerCleared reports if the "owner" edge to the Cluster entity was cleared.
+func (m *AgentMutation) OwnerCleared() bool {
+	return m.clearedowner
+}
+
+// OwnerID returns the "owner" edge ID in the mutation.
+func (m *AgentMutation) OwnerID() (id uint, exists bool) {
+	if m.owner != nil {
+		return *m.owner, true
+	}
+	return
+}
+
+// OwnerIDs returns the "owner" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// OwnerID instead. It exists only for internal usage by the builders.
+func (m *AgentMutation) OwnerIDs() (ids []uint) {
+	if id := m.owner; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetOwner resets all changes to the "owner" edge.
+func (m *AgentMutation) ResetOwner() {
+	m.owner = nil
+	m.clearedowner = false
 }
 
 // Where appends a list predicates to the AgentMutation builder.
@@ -1183,9 +1224,12 @@ func (m *AgentMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *AgentMutation) AddedEdges() []string {
-	edges := make([]string, 0, 1)
-	if m.nodes != nil {
-		edges = append(edges, agent.EdgeNodes)
+	edges := make([]string, 0, 2)
+	if m.node != nil {
+		edges = append(edges, agent.EdgeNode)
+	}
+	if m.owner != nil {
+		edges = append(edges, agent.EdgeOwner)
 	}
 	return edges
 }
@@ -1194,21 +1238,25 @@ func (m *AgentMutation) AddedEdges() []string {
 // name in this mutation.
 func (m *AgentMutation) AddedIDs(name string) []ent.Value {
 	switch name {
-	case agent.EdgeNodes:
-		ids := make([]ent.Value, 0, len(m.nodes))
-		for id := range m.nodes {
+	case agent.EdgeNode:
+		ids := make([]ent.Value, 0, len(m.node))
+		for id := range m.node {
 			ids = append(ids, id)
 		}
 		return ids
+	case agent.EdgeOwner:
+		if id := m.owner; id != nil {
+			return []ent.Value{*id}
+		}
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *AgentMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 1)
-	if m.removednodes != nil {
-		edges = append(edges, agent.EdgeNodes)
+	edges := make([]string, 0, 2)
+	if m.removednode != nil {
+		edges = append(edges, agent.EdgeNode)
 	}
 	return edges
 }
@@ -1217,9 +1265,9 @@ func (m *AgentMutation) RemovedEdges() []string {
 // the given name in this mutation.
 func (m *AgentMutation) RemovedIDs(name string) []ent.Value {
 	switch name {
-	case agent.EdgeNodes:
-		ids := make([]ent.Value, 0, len(m.removednodes))
-		for id := range m.removednodes {
+	case agent.EdgeNode:
+		ids := make([]ent.Value, 0, len(m.removednode))
+		for id := range m.removednode {
 			ids = append(ids, id)
 		}
 		return ids
@@ -1229,9 +1277,12 @@ func (m *AgentMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *AgentMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 1)
-	if m.clearednodes {
-		edges = append(edges, agent.EdgeNodes)
+	edges := make([]string, 0, 2)
+	if m.clearednode {
+		edges = append(edges, agent.EdgeNode)
+	}
+	if m.clearedowner {
+		edges = append(edges, agent.EdgeOwner)
 	}
 	return edges
 }
@@ -1240,8 +1291,10 @@ func (m *AgentMutation) ClearedEdges() []string {
 // was cleared in this mutation.
 func (m *AgentMutation) EdgeCleared(name string) bool {
 	switch name {
-	case agent.EdgeNodes:
-		return m.clearednodes
+	case agent.EdgeNode:
+		return m.clearednode
+	case agent.EdgeOwner:
+		return m.clearedowner
 	}
 	return false
 }
@@ -1250,6 +1303,9 @@ func (m *AgentMutation) EdgeCleared(name string) bool {
 // if that edge is not defined in the schema.
 func (m *AgentMutation) ClearEdge(name string) error {
 	switch name {
+	case agent.EdgeOwner:
+		m.ClearOwner()
+		return nil
 	}
 	return fmt.Errorf("unknown Agent unique edge %s", name)
 }
@@ -1258,8 +1314,11 @@ func (m *AgentMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *AgentMutation) ResetEdge(name string) error {
 	switch name {
-	case agent.EdgeNodes:
-		m.ResetNodes()
+	case agent.EdgeNode:
+		m.ResetNode()
+		return nil
+	case agent.EdgeOwner:
+		m.ResetOwner()
 		return nil
 	}
 	return fmt.Errorf("unknown Agent edge %s", name)
@@ -2031,6 +2090,8 @@ type ContainerMutation struct {
 	process        map[uint]struct{}
 	removedprocess map[uint]struct{}
 	clearedprocess bool
+	owner          *uint
+	clearedowner   bool
 	done           bool
 	oldValue       func(context.Context) (*Container, error)
 	predicates     []predicate.Container
@@ -2575,6 +2636,45 @@ func (m *ContainerMutation) ResetProcess() {
 	m.removedprocess = nil
 }
 
+// SetOwnerID sets the "owner" edge to the Node entity by id.
+func (m *ContainerMutation) SetOwnerID(id uint) {
+	m.owner = &id
+}
+
+// ClearOwner clears the "owner" edge to the Node entity.
+func (m *ContainerMutation) ClearOwner() {
+	m.clearedowner = true
+}
+
+// OwnerCleared reports if the "owner" edge to the Node entity was cleared.
+func (m *ContainerMutation) OwnerCleared() bool {
+	return m.clearedowner
+}
+
+// OwnerID returns the "owner" edge ID in the mutation.
+func (m *ContainerMutation) OwnerID() (id uint, exists bool) {
+	if m.owner != nil {
+		return *m.owner, true
+	}
+	return
+}
+
+// OwnerIDs returns the "owner" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// OwnerID instead. It exists only for internal usage by the builders.
+func (m *ContainerMutation) OwnerIDs() (ids []uint) {
+	if id := m.owner; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetOwner resets all changes to the "owner" edge.
+func (m *ContainerMutation) ResetOwner() {
+	m.owner = nil
+	m.clearedowner = false
+}
+
 // Where appends a list predicates to the ContainerMutation builder.
 func (m *ContainerMutation) Where(ps ...predicate.Container) {
 	m.predicates = append(m.predicates, ps...)
@@ -2873,9 +2973,12 @@ func (m *ContainerMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *ContainerMutation) AddedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.process != nil {
 		edges = append(edges, container.EdgeProcess)
+	}
+	if m.owner != nil {
+		edges = append(edges, container.EdgeOwner)
 	}
 	return edges
 }
@@ -2890,13 +2993,17 @@ func (m *ContainerMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case container.EdgeOwner:
+		if id := m.owner; id != nil {
+			return []ent.Value{*id}
+		}
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *ContainerMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.removedprocess != nil {
 		edges = append(edges, container.EdgeProcess)
 	}
@@ -2919,9 +3026,12 @@ func (m *ContainerMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *ContainerMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.clearedprocess {
 		edges = append(edges, container.EdgeProcess)
+	}
+	if m.clearedowner {
+		edges = append(edges, container.EdgeOwner)
 	}
 	return edges
 }
@@ -2932,6 +3042,8 @@ func (m *ContainerMutation) EdgeCleared(name string) bool {
 	switch name {
 	case container.EdgeProcess:
 		return m.clearedprocess
+	case container.EdgeOwner:
+		return m.clearedowner
 	}
 	return false
 }
@@ -2940,6 +3052,9 @@ func (m *ContainerMutation) EdgeCleared(name string) bool {
 // if that edge is not defined in the schema.
 func (m *ContainerMutation) ClearEdge(name string) error {
 	switch name {
+	case container.EdgeOwner:
+		m.ClearOwner()
+		return nil
 	}
 	return fmt.Errorf("unknown Container unique edge %s", name)
 }
@@ -2951,6 +3066,9 @@ func (m *ContainerMutation) ResetEdge(name string) error {
 	case container.EdgeProcess:
 		m.ResetProcess()
 		return nil
+	case container.EdgeOwner:
+		m.ResetOwner()
+		return nil
 	}
 	return fmt.Errorf("unknown Container edge %s", name)
 }
@@ -2958,41 +3076,47 @@ func (m *ContainerMutation) ResetEdge(name string) error {
 // EventMutation represents an operation that mutates the Event nodes in the graph.
 type EventMutation struct {
 	config
-	op             Op
-	typ            string
-	id             *int
-	created_at     *time.Time
-	updated_at     *time.Time
-	deleted_at     *time.Time
-	ts             *time.Time
-	value          *float64
-	addvalue       *float64
-	acked          *bool
-	ackedTs        *time.Time
-	endpointId     *uint
-	addendpointId  *uint
-	typeId         *uint
-	addtypeId      *uint
-	nameId         *uint
-	addnameId      *uint
-	labelId        *uint
-	addlabelId     *uint
-	clusterId      *uint
-	addclusterId   *uint
-	agentId        *uint
-	addagentId     *uint
-	nodeId         *uint
-	addnodeId      *uint
-	procesId       *uint
-	addprocesId    *uint
-	containerId    *uint
-	addcontainerId *uint
-	podId          *uint
-	addpodId       *uint
-	clearedFields  map[string]struct{}
-	done           bool
-	oldValue       func(context.Context) (*Event, error)
-	predicates     []predicate.Event
+	op                            Op
+	typ                           string
+	id                            *int
+	created_at                    *time.Time
+	updated_at                    *time.Time
+	deleted_at                    *time.Time
+	ts                            *time.Time
+	value                         *float64
+	addvalue                      *float64
+	acked                         *bool
+	ackedTs                       *time.Time
+	endpointId                    *uint
+	addendpointId                 *uint
+	typeId                        *uint
+	addtypeId                     *uint
+	nameId                        *uint
+	addnameId                     *uint
+	labelId                       *uint
+	addlabelId                    *uint
+	clusterId                     *uint
+	addclusterId                  *uint
+	agentId                       *uint
+	addagentId                    *uint
+	nodeId                        *uint
+	addnodeId                     *uint
+	procesId                      *uint
+	addprocesId                   *uint
+	containerId                   *uint
+	addcontainerId                *uint
+	podId                         *uint
+	addpodId                      *uint
+	clearedFields                 map[string]struct{}
+	_MetricName_events            *uint
+	cleared_MetricName_events     bool
+	_MetricLabel_events           *uint
+	cleared_MetricLabel_events    bool
+	_MetricEndpoint_events        *uint
+	cleared_MetricEndpoint_events bool
+	done                          bool
+	oldValue                      func(context.Context) (*Event, error)
+	predicates                    []predicate.Event
 }
 
 var _ ent.Mutation = (*EventMutation)(nil)
@@ -3906,6 +4030,123 @@ func (m *EventMutation) ResetPodId() {
 	m.addpodId = nil
 }
 
+// SetMetricNameEventsID sets the "MetricName_events" edge to the MetricName entity by id.
+func (m *EventMutation) SetMetricNameEventsID(id uint) {
+	m._MetricName_events = &id
+}
+
+// ClearMetricNameEvents clears the "MetricName_events" edge to the MetricName entity.
+func (m *EventMutation) ClearMetricNameEvents() {
+	m.cleared_MetricName_events = true
+}
+
+// MetricNameEventsCleared reports if the "MetricName_events" edge to the MetricName entity was cleared.
+func (m *EventMutation) MetricNameEventsCleared() bool {
+	return m.cleared_MetricName_events
+}
+
+// MetricNameEventsID returns the "MetricName_events" edge ID in the mutation.
+func (m *EventMutation) MetricNameEventsID() (id uint, exists bool) {
+	if m._MetricName_events != nil {
+		return *m._MetricName_events, true
+	}
+	return
+}
+
+// MetricNameEventsIDs returns the "MetricName_events" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// MetricNameEventsID instead. It exists only for internal usage by the builders.
+func (m *EventMutation) MetricNameEventsIDs() (ids []uint) {
+	if id := m._MetricName_events; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetMetricNameEvents resets all changes to the "MetricName_events" edge.
+func (m *EventMutation) ResetMetricNameEvents() {
+	m._MetricName_events = nil
+	m.cleared_MetricName_events = false
+}
+
+// SetMetricLabelEventsID sets the "MetricLabel_events" edge to the MetricLabel entity by id.
+func (m *EventMutation) SetMetricLabelEventsID(id uint) {
+	m._MetricLabel_events = &id
+}
+
+// ClearMetricLabelEvents clears the "MetricLabel_events" edge to the MetricLabel entity.
+func (m *EventMutation) ClearMetricLabelEvents() {
+	m.cleared_MetricLabel_events = true
+}
+
+// MetricLabelEventsCleared reports if the "MetricLabel_events" edge to the MetricLabel entity was cleared.
+func (m *EventMutation) MetricLabelEventsCleared() bool {
+	return m.cleared_MetricLabel_events
+}
+
+// MetricLabelEventsID returns the "MetricLabel_events" edge ID in the mutation.
+func (m *EventMutation) MetricLabelEventsID() (id uint, exists bool) {
+	if m._MetricLabel_events != nil {
+		return *m._MetricLabel_events, true
+	}
+	return
+}
+
+// MetricLabelEventsIDs returns the "MetricLabel_events" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// MetricLabelEventsID instead. It exists only for internal usage by the builders.
+func (m *EventMutation) MetricLabelEventsIDs() (ids []uint) {
+	if id := m._MetricLabel_events; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetMetricLabelEvents resets all changes to the "MetricLabel_events" edge.
+func (m *EventMutation) ResetMetricLabelEvents() {
+	m._MetricLabel_events = nil
+	m.cleared_MetricLabel_events = false
+}
+
+// SetMetricEndpointEventsID sets the "MetricEndpoint_events" edge to the MetricEndpoint entity by id.
+func (m *EventMutation) SetMetricEndpointEventsID(id uint) {
+	m._MetricEndpoint_events = &id
+}
+
+// ClearMetricEndpointEvents clears the "MetricEndpoint_events" edge to the MetricEndpoint entity.
+func (m *EventMutation) ClearMetricEndpointEvents() {
+	m.cleared_MetricEndpoint_events = true
+}
+
+// MetricEndpointEventsCleared reports if the "MetricEndpoint_events" edge to the MetricEndpoint entity was cleared.
+func (m *EventMutation) MetricEndpointEventsCleared() bool {
+	return m.cleared_MetricEndpoint_events
+}
+
+// MetricEndpointEventsID returns the "MetricEndpoint_events" edge ID in the mutation.
+func (m *EventMutation) MetricEndpointEventsID() (id uint, exists bool) {
+	if m._MetricEndpoint_events != nil {
+		return *m._MetricEndpoint_events, true
+	}
+	return
+}
+
+// MetricEndpointEventsIDs returns the "MetricEndpoint_events" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// MetricEndpointEventsID instead. It exists only for internal usage by the builders.
+func (m *EventMutation) MetricEndpointEventsIDs() (ids []uint) {
+	if id := m._MetricEndpoint_events; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetMetricEndpointEvents resets all changes to the "MetricEndpoint_events" edge.
+func (m *EventMutation) ResetMetricEndpointEvents() {
+	m._MetricEndpoint_events = nil
+	m.cleared_MetricEndpoint_events = false
+}
+
 // Where appends a list predicates to the EventMutation builder.
 func (m *EventMutation) Where(ps ...predicate.Event) {
 	m.predicates = append(m.predicates, ps...)
@@ -4431,49 +4672,113 @@ func (m *EventMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *EventMutation) AddedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 3)
+	if m._MetricName_events != nil {
+		edges = append(edges, event.EdgeMetricNameEvents)
+	}
+	if m._MetricLabel_events != nil {
+		edges = append(edges, event.EdgeMetricLabelEvents)
+	}
+	if m._MetricEndpoint_events != nil {
+		edges = append(edges, event.EdgeMetricEndpointEvents)
+	}
 	return edges
 }
 
 // AddedIDs returns all IDs (to other nodes) that were added for the given edge
 // name in this mutation.
 func (m *EventMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case event.EdgeMetricNameEvents:
+		if id := m._MetricName_events; id != nil {
+			return []ent.Value{*id}
+		}
+	case event.EdgeMetricLabelEvents:
+		if id := m._MetricLabel_events; id != nil {
+			return []ent.Value{*id}
+		}
+	case event.EdgeMetricEndpointEvents:
+		if id := m._MetricEndpoint_events; id != nil {
+			return []ent.Value{*id}
+		}
+	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *EventMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 3)
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
 func (m *EventMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *EventMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 3)
+	if m.cleared_MetricName_events {
+		edges = append(edges, event.EdgeMetricNameEvents)
+	}
+	if m.cleared_MetricLabel_events {
+		edges = append(edges, event.EdgeMetricLabelEvents)
+	}
+	if m.cleared_MetricEndpoint_events {
+		edges = append(edges, event.EdgeMetricEndpointEvents)
+	}
 	return edges
 }
 
 // EdgeCleared returns a boolean which indicates if the edge with the given name
 // was cleared in this mutation.
 func (m *EventMutation) EdgeCleared(name string) bool {
+	switch name {
+	case event.EdgeMetricNameEvents:
+		return m.cleared_MetricName_events
+	case event.EdgeMetricLabelEvents:
+		return m.cleared_MetricLabel_events
+	case event.EdgeMetricEndpointEvents:
+		return m.cleared_MetricEndpoint_events
+	}
 	return false
 }
 
 // ClearEdge clears the value of the edge with the given name. It returns an error
 // if that edge is not defined in the schema.
 func (m *EventMutation) ClearEdge(name string) error {
+	switch name {
+	case event.EdgeMetricNameEvents:
+		m.ClearMetricNameEvents()
+		return nil
+	case event.EdgeMetricLabelEvents:
+		m.ClearMetricLabelEvents()
+		return nil
+	case event.EdgeMetricEndpointEvents:
+		m.ClearMetricEndpointEvents()
+		return nil
+	}
 	return fmt.Errorf("unknown Event unique edge %s", name)
 }
 
 // ResetEdge resets all changes to the edge with the given name in this mutation.
 // It returns an error if the edge is not defined in the schema.
 func (m *EventMutation) ResetEdge(name string) error {
+	switch name {
+	case event.EdgeMetricNameEvents:
+		m.ResetMetricNameEvents()
+		return nil
+	case event.EdgeMetricLabelEvents:
+		m.ResetMetricLabelEvents()
+		return nil
+	case event.EdgeMetricEndpointEvents:
+		m.ResetMetricEndpointEvents()
+		return nil
+	}
 	return fmt.Errorf("unknown Event edge %s", name)
 }
 
@@ -16769,35 +17074,41 @@ func (m *K8sStatefulSetMutation) ResetEdge(name string) error {
 // MetricMutation represents an operation that mutates the Metric nodes in the graph.
 type MetricMutation struct {
 	config
-	op             Op
-	typ            string
-	id             *int
-	created_at     *time.Time
-	updated_at     *time.Time
-	deleted_at     *time.Time
-	ts             *time.Time
-	value          *float64
-	addvalue       *float64
-	endpointId     *uint
-	addendpointId  *uint
-	typeId         *uint
-	addtypeId      *uint
-	nameId         *uint
-	addnameId      *uint
-	labelId        *uint
-	addlabelId     *uint
-	clusterId      *uint
-	addclusterId   *uint
-	nodeId         *uint
-	addnodeId      *uint
-	procesId       *uint
-	addprocesId    *uint
-	containerId    *uint
-	addcontainerId *uint
-	clearedFields  map[string]struct{}
-	done           bool
-	oldValue       func(context.Context) (*Metric, error)
-	predicates     []predicate.Metric
+	op                             Op
+	typ                            string
+	id                             *int
+	created_at                     *time.Time
+	updated_at                     *time.Time
+	deleted_at                     *time.Time
+	ts                             *time.Time
+	value                          *float64
+	addvalue                       *float64
+	endpointId                     *uint
+	addendpointId                  *uint
+	typeId                         *uint
+	addtypeId                      *uint
+	nameId                         *uint
+	addnameId                      *uint
+	labelId                        *uint
+	addlabelId                     *uint
+	clusterId                      *uint
+	addclusterId                   *uint
+	nodeId                         *uint
+	addnodeId                      *uint
+	procesId                       *uint
+	addprocesId                    *uint
+	containerId                    *uint
+	addcontainerId                 *uint
+	clearedFields                  map[string]struct{}
+	_MetricName_Metrics            *uint
+	cleared_MetricName_Metrics     bool
+	_MetricEndpoint_Metrics        *uint
+	cleared_MetricEndpoint_Metrics bool
+	_MetricLabel_Metrics           *uint
+	cleared_MetricLabel_Metrics    bool
+	done                           bool
+	oldValue                       func(context.Context) (*Metric, error)
+	predicates                     []predicate.Metric
 }
 
 var _ ent.Mutation = (*MetricMutation)(nil)
@@ -17527,6 +17838,123 @@ func (m *MetricMutation) ResetContainerId() {
 	m.addcontainerId = nil
 }
 
+// SetMetricNameMetricsID sets the "MetricName_Metrics" edge to the MetricName entity by id.
+func (m *MetricMutation) SetMetricNameMetricsID(id uint) {
+	m._MetricName_Metrics = &id
+}
+
+// ClearMetricNameMetrics clears the "MetricName_Metrics" edge to the MetricName entity.
+func (m *MetricMutation) ClearMetricNameMetrics() {
+	m.cleared_MetricName_Metrics = true
+}
+
+// MetricNameMetricsCleared reports if the "MetricName_Metrics" edge to the MetricName entity was cleared.
+func (m *MetricMutation) MetricNameMetricsCleared() bool {
+	return m.cleared_MetricName_Metrics
+}
+
+// MetricNameMetricsID returns the "MetricName_Metrics" edge ID in the mutation.
+func (m *MetricMutation) MetricNameMetricsID() (id uint, exists bool) {
+	if m._MetricName_Metrics != nil {
+		return *m._MetricName_Metrics, true
+	}
+	return
+}
+
+// MetricNameMetricsIDs returns the "MetricName_Metrics" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// MetricNameMetricsID instead. It exists only for internal usage by the builders.
+func (m *MetricMutation) MetricNameMetricsIDs() (ids []uint) {
+	if id := m._MetricName_Metrics; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetMetricNameMetrics resets all changes to the "MetricName_Metrics" edge.
+func (m *MetricMutation) ResetMetricNameMetrics() {
+	m._MetricName_Metrics = nil
+	m.cleared_MetricName_Metrics = false
+}
+
+// SetMetricEndpointMetricsID sets the "MetricEndpoint_Metrics" edge to the MetricEndpoint entity by id.
+func (m *MetricMutation) SetMetricEndpointMetricsID(id uint) {
+	m._MetricEndpoint_Metrics = &id
+}
+
+// ClearMetricEndpointMetrics clears the "MetricEndpoint_Metrics" edge to the MetricEndpoint entity.
+func (m *MetricMutation) ClearMetricEndpointMetrics() {
+	m.cleared_MetricEndpoint_Metrics = true
+}
+
+// MetricEndpointMetricsCleared reports if the "MetricEndpoint_Metrics" edge to the MetricEndpoint entity was cleared.
+func (m *MetricMutation) MetricEndpointMetricsCleared() bool {
+	return m.cleared_MetricEndpoint_Metrics
+}
+
+// MetricEndpointMetricsID returns the "MetricEndpoint_Metrics" edge ID in the mutation.
+func (m *MetricMutation) MetricEndpointMetricsID() (id uint, exists bool) {
+	if m._MetricEndpoint_Metrics != nil {
+		return *m._MetricEndpoint_Metrics, true
+	}
+	return
+}
+
+// MetricEndpointMetricsIDs returns the "MetricEndpoint_Metrics" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// MetricEndpointMetricsID instead. It exists only for internal usage by the builders.
+func (m *MetricMutation) MetricEndpointMetricsIDs() (ids []uint) {
+	if id := m._MetricEndpoint_Metrics; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetMetricEndpointMetrics resets all changes to the "MetricEndpoint_Metrics" edge.
+func (m *MetricMutation) ResetMetricEndpointMetrics() {
+	m._MetricEndpoint_Metrics = nil
+	m.cleared_MetricEndpoint_Metrics = false
+}
+
+// SetMetricLabelMetricsID sets the "MetricLabel_Metrics" edge to the MetricLabel entity by id.
+func (m *MetricMutation) SetMetricLabelMetricsID(id uint) {
+	m._MetricLabel_Metrics = &id
+}
+
+// ClearMetricLabelMetrics clears the "MetricLabel_Metrics" edge to the MetricLabel entity.
+func (m *MetricMutation) ClearMetricLabelMetrics() {
+	m.cleared_MetricLabel_Metrics = true
+}
+
+// MetricLabelMetricsCleared reports if the "MetricLabel_Metrics" edge to the MetricLabel entity was cleared.
+func (m *MetricMutation) MetricLabelMetricsCleared() bool {
+	return m.cleared_MetricLabel_Metrics
+}
+
+// MetricLabelMetricsID returns the "MetricLabel_Metrics" edge ID in the mutation.
+func (m *MetricMutation) MetricLabelMetricsID() (id uint, exists bool) {
+	if m._MetricLabel_Metrics != nil {
+		return *m._MetricLabel_Metrics, true
+	}
+	return
+}
+
+// MetricLabelMetricsIDs returns the "MetricLabel_Metrics" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// MetricLabelMetricsID instead. It exists only for internal usage by the builders.
+func (m *MetricMutation) MetricLabelMetricsIDs() (ids []uint) {
+	if id := m._MetricLabel_Metrics; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetMetricLabelMetrics resets all changes to the "MetricLabel_Metrics" edge.
+func (m *MetricMutation) ResetMetricLabelMetrics() {
+	m._MetricLabel_Metrics = nil
+	m.cleared_MetricLabel_Metrics = false
+}
+
 // Where appends a list predicates to the MetricMutation builder.
 func (m *MetricMutation) Where(ps ...predicate.Metric) {
 	m.predicates = append(m.predicates, ps...)
@@ -17960,49 +18388,113 @@ func (m *MetricMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *MetricMutation) AddedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 3)
+	if m._MetricName_Metrics != nil {
+		edges = append(edges, metric.EdgeMetricNameMetrics)
+	}
+	if m._MetricEndpoint_Metrics != nil {
+		edges = append(edges, metric.EdgeMetricEndpointMetrics)
+	}
+	if m._MetricLabel_Metrics != nil {
+		edges = append(edges, metric.EdgeMetricLabelMetrics)
+	}
 	return edges
 }
 
 // AddedIDs returns all IDs (to other nodes) that were added for the given edge
 // name in this mutation.
 func (m *MetricMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case metric.EdgeMetricNameMetrics:
+		if id := m._MetricName_Metrics; id != nil {
+			return []ent.Value{*id}
+		}
+	case metric.EdgeMetricEndpointMetrics:
+		if id := m._MetricEndpoint_Metrics; id != nil {
+			return []ent.Value{*id}
+		}
+	case metric.EdgeMetricLabelMetrics:
+		if id := m._MetricLabel_Metrics; id != nil {
+			return []ent.Value{*id}
+		}
+	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *MetricMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 3)
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
 func (m *MetricMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *MetricMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 3)
+	if m.cleared_MetricName_Metrics {
+		edges = append(edges, metric.EdgeMetricNameMetrics)
+	}
+	if m.cleared_MetricEndpoint_Metrics {
+		edges = append(edges, metric.EdgeMetricEndpointMetrics)
+	}
+	if m.cleared_MetricLabel_Metrics {
+		edges = append(edges, metric.EdgeMetricLabelMetrics)
+	}
 	return edges
 }
 
 // EdgeCleared returns a boolean which indicates if the edge with the given name
 // was cleared in this mutation.
 func (m *MetricMutation) EdgeCleared(name string) bool {
+	switch name {
+	case metric.EdgeMetricNameMetrics:
+		return m.cleared_MetricName_Metrics
+	case metric.EdgeMetricEndpointMetrics:
+		return m.cleared_MetricEndpoint_Metrics
+	case metric.EdgeMetricLabelMetrics:
+		return m.cleared_MetricLabel_Metrics
+	}
 	return false
 }
 
 // ClearEdge clears the value of the edge with the given name. It returns an error
 // if that edge is not defined in the schema.
 func (m *MetricMutation) ClearEdge(name string) error {
+	switch name {
+	case metric.EdgeMetricNameMetrics:
+		m.ClearMetricNameMetrics()
+		return nil
+	case metric.EdgeMetricEndpointMetrics:
+		m.ClearMetricEndpointMetrics()
+		return nil
+	case metric.EdgeMetricLabelMetrics:
+		m.ClearMetricLabelMetrics()
+		return nil
+	}
 	return fmt.Errorf("unknown Metric unique edge %s", name)
 }
 
 // ResetEdge resets all changes to the edge with the given name in this mutation.
 // It returns an error if the edge is not defined in the schema.
 func (m *MetricMutation) ResetEdge(name string) error {
+	switch name {
+	case metric.EdgeMetricNameMetrics:
+		m.ResetMetricNameMetrics()
+		return nil
+	case metric.EdgeMetricEndpointMetrics:
+		m.ResetMetricEndpointMetrics()
+		return nil
+	case metric.EdgeMetricLabelMetrics:
+		m.ResetMetricLabelMetrics()
+		return nil
+	}
 	return fmt.Errorf("unknown Metric edge %s", name)
 }
 
@@ -20637,6 +21129,8 @@ type NodeMutation struct {
 	clusterId         *uint
 	addclusterId      *uint
 	clearedFields     map[string]struct{}
+	owner             *uint
+	clearedowner      bool
 	containers        map[uint]struct{}
 	removedcontainers map[uint]struct{}
 	clearedcontainers bool
@@ -21385,6 +21879,45 @@ func (m *NodeMutation) ResetClusterId() {
 	m.addclusterId = nil
 }
 
+// SetOwnerID sets the "owner" edge to the Cluster entity by id.
+func (m *NodeMutation) SetOwnerID(id uint) {
+	m.owner = &id
+}
+
+// ClearOwner clears the "owner" edge to the Cluster entity.
+func (m *NodeMutation) ClearOwner() {
+	m.clearedowner = true
+}
+
+// OwnerCleared reports if the "owner" edge to the Cluster entity was cleared.
+func (m *NodeMutation) OwnerCleared() bool {
+	return m.clearedowner
+}
+
+// OwnerID returns the "owner" edge ID in the mutation.
+func (m *NodeMutation) OwnerID() (id uint, exists bool) {
+	if m.owner != nil {
+		return *m.owner, true
+	}
+	return
+}
+
+// OwnerIDs returns the "owner" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// OwnerID instead. It exists only for internal usage by the builders.
+func (m *NodeMutation) OwnerIDs() (ids []uint) {
+	if id := m.owner; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetOwner resets all changes to the "owner" edge.
+func (m *NodeMutation) ResetOwner() {
+	m.owner = nil
+	m.clearedowner = false
+}
+
 // AddContainerIDs adds the "containers" edge to the Container entity by ids.
 func (m *NodeMutation) AddContainerIDs(ids ...uint) {
 	if m.containers == nil {
@@ -21910,7 +22443,10 @@ func (m *NodeMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *NodeMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
+	if m.owner != nil {
+		edges = append(edges, node.EdgeOwner)
+	}
 	if m.containers != nil {
 		edges = append(edges, node.EdgeContainers)
 	}
@@ -21924,6 +22460,10 @@ func (m *NodeMutation) AddedEdges() []string {
 // name in this mutation.
 func (m *NodeMutation) AddedIDs(name string) []ent.Value {
 	switch name {
+	case node.EdgeOwner:
+		if id := m.owner; id != nil {
+			return []ent.Value{*id}
+		}
 	case node.EdgeContainers:
 		ids := make([]ent.Value, 0, len(m.containers))
 		for id := range m.containers {
@@ -21942,7 +22482,7 @@ func (m *NodeMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *NodeMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.removedcontainers != nil {
 		edges = append(edges, node.EdgeContainers)
 	}
@@ -21974,7 +22514,10 @@ func (m *NodeMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *NodeMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
+	if m.clearedowner {
+		edges = append(edges, node.EdgeOwner)
+	}
 	if m.clearedcontainers {
 		edges = append(edges, node.EdgeContainers)
 	}
@@ -21988,6 +22531,8 @@ func (m *NodeMutation) ClearedEdges() []string {
 // was cleared in this mutation.
 func (m *NodeMutation) EdgeCleared(name string) bool {
 	switch name {
+	case node.EdgeOwner:
+		return m.clearedowner
 	case node.EdgeContainers:
 		return m.clearedcontainers
 	case node.EdgeProcess:
@@ -22000,6 +22545,9 @@ func (m *NodeMutation) EdgeCleared(name string) bool {
 // if that edge is not defined in the schema.
 func (m *NodeMutation) ClearEdge(name string) error {
 	switch name {
+	case node.EdgeOwner:
+		m.ClearOwner()
+		return nil
 	}
 	return fmt.Errorf("unknown Node unique edge %s", name)
 }
@@ -22008,6 +22556,9 @@ func (m *NodeMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *NodeMutation) ResetEdge(name string) error {
 	switch name {
+	case node.EdgeOwner:
+		m.ResetOwner()
+		return nil
 	case node.EdgeContainers:
 		m.ResetContainers()
 		return nil
@@ -22021,24 +22572,28 @@ func (m *NodeMutation) ResetEdge(name string) error {
 // ProcesMutation represents an operation that mutates the Proces nodes in the graph.
 type ProcesMutation struct {
 	config
-	op            Op
-	typ           string
-	id            *uint
-	created_at    *time.Time
-	updated_at    *time.Time
-	deleted_at    *time.Time
-	name          *string
-	pId           *int32
-	addpId        *int32
-	cmd           *string
-	info          *[]string
-	clusterId     *string
-	nodeId        *string
-	containerId   *string
-	clearedFields map[string]struct{}
-	done          bool
-	oldValue      func(context.Context) (*Proces, error)
-	predicates    []predicate.Proces
+	op                       Op
+	typ                      string
+	id                       *uint
+	created_at               *time.Time
+	updated_at               *time.Time
+	deleted_at               *time.Time
+	name                     *string
+	pId                      *int32
+	addpId                   *int32
+	cmd                      *string
+	info                     *[]string
+	clusterId                *string
+	nodeId                   *string
+	containerId              *string
+	clearedFields            map[string]struct{}
+	node_process             *uint
+	clearednode_process      bool
+	container_process        *uint
+	clearedcontainer_process bool
+	done                     bool
+	oldValue                 func(context.Context) (*Proces, error)
+	predicates               []predicate.Proces
 }
 
 var _ ent.Mutation = (*ProcesMutation)(nil)
@@ -22506,6 +23061,84 @@ func (m *ProcesMutation) ResetContainerId() {
 	m.containerId = nil
 }
 
+// SetNodeProcessID sets the "node_process" edge to the Node entity by id.
+func (m *ProcesMutation) SetNodeProcessID(id uint) {
+	m.node_process = &id
+}
+
+// ClearNodeProcess clears the "node_process" edge to the Node entity.
+func (m *ProcesMutation) ClearNodeProcess() {
+	m.clearednode_process = true
+}
+
+// NodeProcessCleared reports if the "node_process" edge to the Node entity was cleared.
+func (m *ProcesMutation) NodeProcessCleared() bool {
+	return m.clearednode_process
+}
+
+// NodeProcessID returns the "node_process" edge ID in the mutation.
+func (m *ProcesMutation) NodeProcessID() (id uint, exists bool) {
+	if m.node_process != nil {
+		return *m.node_process, true
+	}
+	return
+}
+
+// NodeProcessIDs returns the "node_process" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// NodeProcessID instead. It exists only for internal usage by the builders.
+func (m *ProcesMutation) NodeProcessIDs() (ids []uint) {
+	if id := m.node_process; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetNodeProcess resets all changes to the "node_process" edge.
+func (m *ProcesMutation) ResetNodeProcess() {
+	m.node_process = nil
+	m.clearednode_process = false
+}
+
+// SetContainerProcessID sets the "container_process" edge to the Container entity by id.
+func (m *ProcesMutation) SetContainerProcessID(id uint) {
+	m.container_process = &id
+}
+
+// ClearContainerProcess clears the "container_process" edge to the Container entity.
+func (m *ProcesMutation) ClearContainerProcess() {
+	m.clearedcontainer_process = true
+}
+
+// ContainerProcessCleared reports if the "container_process" edge to the Container entity was cleared.
+func (m *ProcesMutation) ContainerProcessCleared() bool {
+	return m.clearedcontainer_process
+}
+
+// ContainerProcessID returns the "container_process" edge ID in the mutation.
+func (m *ProcesMutation) ContainerProcessID() (id uint, exists bool) {
+	if m.container_process != nil {
+		return *m.container_process, true
+	}
+	return
+}
+
+// ContainerProcessIDs returns the "container_process" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// ContainerProcessID instead. It exists only for internal usage by the builders.
+func (m *ProcesMutation) ContainerProcessIDs() (ids []uint) {
+	if id := m.container_process; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetContainerProcess resets all changes to the "container_process" edge.
+func (m *ProcesMutation) ResetContainerProcess() {
+	m.container_process = nil
+	m.clearedcontainer_process = false
+}
+
 // Where appends a list predicates to the ProcesMutation builder.
 func (m *ProcesMutation) Where(ps ...predicate.Proces) {
 	m.predicates = append(m.predicates, ps...)
@@ -22792,49 +23425,95 @@ func (m *ProcesMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *ProcesMutation) AddedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 2)
+	if m.node_process != nil {
+		edges = append(edges, proces.EdgeNodeProcess)
+	}
+	if m.container_process != nil {
+		edges = append(edges, proces.EdgeContainerProcess)
+	}
 	return edges
 }
 
 // AddedIDs returns all IDs (to other nodes) that were added for the given edge
 // name in this mutation.
 func (m *ProcesMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case proces.EdgeNodeProcess:
+		if id := m.node_process; id != nil {
+			return []ent.Value{*id}
+		}
+	case proces.EdgeContainerProcess:
+		if id := m.container_process; id != nil {
+			return []ent.Value{*id}
+		}
+	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *ProcesMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 2)
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
 func (m *ProcesMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *ProcesMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 2)
+	if m.clearednode_process {
+		edges = append(edges, proces.EdgeNodeProcess)
+	}
+	if m.clearedcontainer_process {
+		edges = append(edges, proces.EdgeContainerProcess)
+	}
 	return edges
 }
 
 // EdgeCleared returns a boolean which indicates if the edge with the given name
 // was cleared in this mutation.
 func (m *ProcesMutation) EdgeCleared(name string) bool {
+	switch name {
+	case proces.EdgeNodeProcess:
+		return m.clearednode_process
+	case proces.EdgeContainerProcess:
+		return m.clearedcontainer_process
+	}
 	return false
 }
 
 // ClearEdge clears the value of the edge with the given name. It returns an error
 // if that edge is not defined in the schema.
 func (m *ProcesMutation) ClearEdge(name string) error {
+	switch name {
+	case proces.EdgeNodeProcess:
+		m.ClearNodeProcess()
+		return nil
+	case proces.EdgeContainerProcess:
+		m.ClearContainerProcess()
+		return nil
+	}
 	return fmt.Errorf("unknown Proces unique edge %s", name)
 }
 
 // ResetEdge resets all changes to the edge with the given name in this mutation.
 // It returns an error if the edge is not defined in the schema.
 func (m *ProcesMutation) ResetEdge(name string) error {
+	switch name {
+	case proces.EdgeNodeProcess:
+		m.ResetNodeProcess()
+		return nil
+	case proces.EdgeContainerProcess:
+		m.ResetContainerProcess()
+		return nil
+	}
 	return fmt.Errorf("unknown Proces edge %s", name)
 }
 

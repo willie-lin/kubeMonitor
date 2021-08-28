@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/predicate"
 )
 
@@ -1168,6 +1169,90 @@ func ContainerIdLT(v uint) predicate.Metric {
 func ContainerIdLTE(v uint) predicate.Metric {
 	return predicate.Metric(func(s *sql.Selector) {
 		s.Where(sql.LTE(s.C(FieldContainerId), v))
+	})
+}
+
+// HasMetricNameMetrics applies the HasEdge predicate on the "MetricName_Metrics" edge.
+func HasMetricNameMetrics() predicate.Metric {
+	return predicate.Metric(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(MetricNameMetricsTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, MetricNameMetricsTable, MetricNameMetricsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasMetricNameMetricsWith applies the HasEdge predicate on the "MetricName_Metrics" edge with a given conditions (other predicates).
+func HasMetricNameMetricsWith(preds ...predicate.MetricName) predicate.Metric {
+	return predicate.Metric(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(MetricNameMetricsInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, MetricNameMetricsTable, MetricNameMetricsColumn),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasMetricEndpointMetrics applies the HasEdge predicate on the "MetricEndpoint_Metrics" edge.
+func HasMetricEndpointMetrics() predicate.Metric {
+	return predicate.Metric(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(MetricEndpointMetricsTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, MetricEndpointMetricsTable, MetricEndpointMetricsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasMetricEndpointMetricsWith applies the HasEdge predicate on the "MetricEndpoint_Metrics" edge with a given conditions (other predicates).
+func HasMetricEndpointMetricsWith(preds ...predicate.MetricEndpoint) predicate.Metric {
+	return predicate.Metric(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(MetricEndpointMetricsInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, MetricEndpointMetricsTable, MetricEndpointMetricsColumn),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasMetricLabelMetrics applies the HasEdge predicate on the "MetricLabel_Metrics" edge.
+func HasMetricLabelMetrics() predicate.Metric {
+	return predicate.Metric(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(MetricLabelMetricsTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, MetricLabelMetricsTable, MetricLabelMetricsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasMetricLabelMetricsWith applies the HasEdge predicate on the "MetricLabel_Metrics" edge with a given conditions (other predicates).
+func HasMetricLabelMetricsWith(preds ...predicate.MetricLabel) predicate.Metric {
+	return predicate.Metric(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(MetricLabelMetricsInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, MetricLabelMetricsTable, MetricLabelMetricsColumn),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
 	})
 }
 

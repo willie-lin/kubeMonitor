@@ -4,6 +4,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema"
+	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
 )
@@ -22,7 +23,7 @@ func (Proces) Annotations() []schema.Annotation {
 
 // Fields of the Process.
 func (Proces) Fields() []ent.Field {
-	return []ent.Field {
+	return []ent.Field{
 		field.Uint("id").Unique(),
 		field.String("name"),
 		field.Int32("pId"),
@@ -36,7 +37,10 @@ func (Proces) Fields() []ent.Field {
 
 // Edges of the Process.
 func (Proces) Edges() []ent.Edge {
-	return nil
+	return []ent.Edge{
+		edge.From("node_process", Node.Type).Ref("process").Unique(),
+		edge.From("container_process", Container.Type).Ref("process").Unique(),
+	}
 }
 
 // Mixin Process
@@ -46,8 +50,8 @@ func (Proces) Mixin() []ent.Mixin {
 	}
 }
 
-func (Proces) Indexes() []ent.Index  {
-	return []ent.Index {
-		index.Fields("clusterId",  "nodeId", "containerId"),
+func (Proces) Indexes() []ent.Index {
+	return []ent.Index{
+		index.Fields("clusterId", "nodeId", "containerId"),
 	}
 }

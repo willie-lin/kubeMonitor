@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/cluster"
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/container"
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/node"
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/predicate"
@@ -28,6 +29,7 @@ type NodeQuery struct {
 	fields     []string
 	predicates []predicate.Node
 	// eager-loading edges.
+	withOwner      *ClusterQuery
 	withContainers *ContainerQuery
 	withProcess    *ProcesQuery
 	withFKs        bool
@@ -65,6 +67,28 @@ func (nq *NodeQuery) Unique(unique bool) *NodeQuery {
 func (nq *NodeQuery) Order(o ...OrderFunc) *NodeQuery {
 	nq.order = append(nq.order, o...)
 	return nq
+}
+
+// QueryOwner chains the current query on the "owner" edge.
+func (nq *NodeQuery) QueryOwner() *ClusterQuery {
+	query := &ClusterQuery{config: nq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := nq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := nq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(node.Table, node.FieldID, selector),
+			sqlgraph.To(cluster.Table, cluster.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, node.OwnerTable, node.OwnerColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(nq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
 }
 
 // QueryContainers chains the current query on the "containers" edge.
@@ -292,12 +316,24 @@ func (nq *NodeQuery) Clone() *NodeQuery {
 		offset:         nq.offset,
 		order:          append([]OrderFunc{}, nq.order...),
 		predicates:     append([]predicate.Node{}, nq.predicates...),
+		withOwner:      nq.withOwner.Clone(),
 		withContainers: nq.withContainers.Clone(),
 		withProcess:    nq.withProcess.Clone(),
 		// clone intermediate query.
 		sql:  nq.sql.Clone(),
 		path: nq.path,
 	}
+}
+
+// WithOwner tells the query-builder to eager-load the nodes that are connected to
+// the "owner" edge. The optional arguments are used to configure the query builder of the edge.
+func (nq *NodeQuery) WithOwner(opts ...func(*ClusterQuery)) *NodeQuery {
+	query := &ClusterQuery{config: nq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	nq.withOwner = query
+	return nq
 }
 
 // WithContainers tells the query-builder to eager-load the nodes that are connected to
@@ -388,11 +424,15 @@ func (nq *NodeQuery) sqlAll(ctx context.Context) ([]*Node, error) {
 		nodes       = []*Node{}
 		withFKs     = nq.withFKs
 		_spec       = nq.querySpec()
-		loadedTypes = [2]bool{
+		loadedTypes = [3]bool{
+			nq.withOwner != nil,
 			nq.withContainers != nil,
 			nq.withProcess != nil,
 		}
 	)
+	if nq.withOwner != nil {
+		withFKs = true
+	}
 	if withFKs {
 		_spec.Node.Columns = append(_spec.Node.Columns, node.ForeignKeys...)
 	}
@@ -414,6 +454,35 @@ func (nq *NodeQuery) sqlAll(ctx context.Context) ([]*Node, error) {
 	}
 	if len(nodes) == 0 {
 		return nodes, nil
+	}
+
+	if query := nq.withOwner; query != nil {
+		ids := make([]uint, 0, len(nodes))
+		nodeids := make(map[uint][]*Node)
+		for i := range nodes {
+			if nodes[i].cluster_nodes == nil {
+				continue
+			}
+			fk := *nodes[i].cluster_nodes
+			if _, ok := nodeids[fk]; !ok {
+				ids = append(ids, fk)
+			}
+			nodeids[fk] = append(nodeids[fk], nodes[i])
+		}
+		query.Where(cluster.IDIn(ids...))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			nodes, ok := nodeids[n.ID]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "cluster_nodes" returned %v`, n.ID)
+			}
+			for i := range nodes {
+				nodes[i].Edges.Owner = n
+			}
+		}
 	}
 
 	if query := nq.withContainers; query != nil {

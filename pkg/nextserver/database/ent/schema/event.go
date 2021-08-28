@@ -4,6 +4,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/entsql"
 	"entgo.io/ent/schema"
+	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 )
 
@@ -11,7 +12,6 @@ import (
 type Event struct {
 	ent.Schema
 }
-
 
 // Annotations of the Cluster.
 func (Event) Annotations() []schema.Annotation {
@@ -27,11 +27,9 @@ func (Event) Mixin() []ent.Mixin {
 	}
 }
 
-
-
 // Fields of the Event.
 func (Event) Fields() []ent.Field {
-	return []ent.Field {
+	return []ent.Field{
 		field.Time("ts"),
 		field.Float("value"),
 
@@ -49,11 +47,14 @@ func (Event) Fields() []ent.Field {
 		field.Uint("procesId"),
 		field.Uint("containerId"),
 		field.Uint("podId"),
-
 	}
 }
 
 // Edges of the Event.
 func (Event) Edges() []ent.Edge {
-	return nil
+	return []ent.Edge{
+		edge.From("MetricName_events", MetricName.Type).Ref("events").Unique(),
+		edge.From("MetricLabel_events", MetricLabel.Type).Ref("events").Unique(),
+		edge.From("MetricEndpoint_events", MetricEndpoint.Type).Ref("events").Unique(),
+	}
 }

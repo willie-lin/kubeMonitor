@@ -31,8 +31,26 @@ const (
 	FieldNodeId = "node_id"
 	// FieldContainerId holds the string denoting the containerid field in the database.
 	FieldContainerId = "container_id"
+	// EdgeNodeProcess holds the string denoting the node_process edge name in mutations.
+	EdgeNodeProcess = "node_process"
+	// EdgeContainerProcess holds the string denoting the container_process edge name in mutations.
+	EdgeContainerProcess = "container_process"
 	// Table holds the table name of the proces in the database.
 	Table = "process"
+	// NodeProcessTable is the table that holds the node_process relation/edge.
+	NodeProcessTable = "process"
+	// NodeProcessInverseTable is the table name for the Node entity.
+	// It exists in this package in order to avoid circular dependency with the "node" package.
+	NodeProcessInverseTable = "nodes"
+	// NodeProcessColumn is the table column denoting the node_process relation/edge.
+	NodeProcessColumn = "node_process"
+	// ContainerProcessTable is the table that holds the container_process relation/edge.
+	ContainerProcessTable = "process"
+	// ContainerProcessInverseTable is the table name for the Container entity.
+	// It exists in this package in order to avoid circular dependency with the "container" package.
+	ContainerProcessInverseTable = "containers"
+	// ContainerProcessColumn is the table column denoting the container_process relation/edge.
+	ContainerProcessColumn = "container_process"
 )
 
 // Columns holds all SQL columns for proces fields.

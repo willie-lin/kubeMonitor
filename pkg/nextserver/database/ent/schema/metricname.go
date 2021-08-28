@@ -28,29 +28,28 @@ func (MetricName) Mixin() []ent.Mixin {
 	}
 }
 
-
 // Fields of the MetricName.
 func (MetricName) Fields() []ent.Field {
-	return []ent.Field {
+	return []ent.Field{
 		field.Uint("id").Unique(),
 		field.String("name").MaxLen(256).Unique(),
 		field.String("help"),
 
 		field.Uint("typeId"),
-
 	}
 }
 
 // Edges of the MetricName.
 func (MetricName) Edges() []ent.Edge {
-	return []ent.Edge {
+	return []ent.Edge{
 		edge.To("metrics", Metric.Type),
 		edge.To("events", Event.Type),
+		edge.From("MetricType_MetricNames", MetricType.Type).Ref("MetricNames").Unique(),
 	}
 }
 
-func (MetricName) indexes()  []ent.Index {
-	return []ent.Index {
+func (MetricName) indexes() []ent.Index {
+	return []ent.Index{
 		index.Fields("name", "typeId"),
 	}
 }

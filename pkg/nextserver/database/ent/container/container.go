@@ -33,6 +33,8 @@ const (
 	FieldNodeId = "node_id"
 	// EdgeProcess holds the string denoting the process edge name in mutations.
 	EdgeProcess = "process"
+	// EdgeOwner holds the string denoting the owner edge name in mutations.
+	EdgeOwner = "owner"
 	// Table holds the table name of the container in the database.
 	Table = "containers"
 	// ProcessTable is the table that holds the process relation/edge.
@@ -42,6 +44,13 @@ const (
 	ProcessInverseTable = "process"
 	// ProcessColumn is the table column denoting the process relation/edge.
 	ProcessColumn = "container_process"
+	// OwnerTable is the table that holds the owner relation/edge.
+	OwnerTable = "containers"
+	// OwnerInverseTable is the table name for the Node entity.
+	// It exists in this package in order to avoid circular dependency with the "node" package.
+	OwnerInverseTable = "nodes"
+	// OwnerColumn is the table column denoting the owner relation/edge.
+	OwnerColumn = "node_containers"
 )
 
 // Columns holds all SQL columns for container fields.

@@ -10,6 +10,7 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/cluster"
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/container"
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/node"
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/proces"
@@ -152,6 +153,25 @@ func (nc *NodeCreate) SetClusterId(u uint) *NodeCreate {
 func (nc *NodeCreate) SetID(u uint) *NodeCreate {
 	nc.mutation.SetID(u)
 	return nc
+}
+
+// SetOwnerID sets the "owner" edge to the Cluster entity by ID.
+func (nc *NodeCreate) SetOwnerID(id uint) *NodeCreate {
+	nc.mutation.SetOwnerID(id)
+	return nc
+}
+
+// SetNillableOwnerID sets the "owner" edge to the Cluster entity by ID if the given value is not nil.
+func (nc *NodeCreate) SetNillableOwnerID(id *uint) *NodeCreate {
+	if id != nil {
+		nc = nc.SetOwnerID(*id)
+	}
+	return nc
+}
+
+// SetOwner sets the "owner" edge to the Cluster entity.
+func (nc *NodeCreate) SetOwner(c *Cluster) *NodeCreate {
+	return nc.SetOwnerID(c.ID)
 }
 
 // AddContainerIDs adds the "containers" edge to the Container entity by IDs.
@@ -530,6 +550,26 @@ func (nc *NodeCreate) createSpec() (*Node, *sqlgraph.CreateSpec) {
 			Column: node.FieldClusterId,
 		})
 		_node.ClusterId = value
+	}
+	if nodes := nc.mutation.OwnerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   node.OwnerTable,
+			Columns: []string{node.OwnerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUint,
+					Column: cluster.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.cluster_nodes = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := nc.mutation.ContainersIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

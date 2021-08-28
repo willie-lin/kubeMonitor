@@ -45,8 +45,35 @@ const (
 	FieldContainerId = "container_id"
 	// FieldPodId holds the string denoting the podid field in the database.
 	FieldPodId = "pod_id"
+	// EdgeMetricNameEvents holds the string denoting the metricname_events edge name in mutations.
+	EdgeMetricNameEvents = "MetricName_events"
+	// EdgeMetricLabelEvents holds the string denoting the metriclabel_events edge name in mutations.
+	EdgeMetricLabelEvents = "MetricLabel_events"
+	// EdgeMetricEndpointEvents holds the string denoting the metricendpoint_events edge name in mutations.
+	EdgeMetricEndpointEvents = "MetricEndpoint_events"
 	// Table holds the table name of the event in the database.
 	Table = "events"
+	// MetricNameEventsTable is the table that holds the MetricName_events relation/edge.
+	MetricNameEventsTable = "events"
+	// MetricNameEventsInverseTable is the table name for the MetricName entity.
+	// It exists in this package in order to avoid circular dependency with the "metricname" package.
+	MetricNameEventsInverseTable = "metricNames"
+	// MetricNameEventsColumn is the table column denoting the MetricName_events relation/edge.
+	MetricNameEventsColumn = "metric_name_events"
+	// MetricLabelEventsTable is the table that holds the MetricLabel_events relation/edge.
+	MetricLabelEventsTable = "events"
+	// MetricLabelEventsInverseTable is the table name for the MetricLabel entity.
+	// It exists in this package in order to avoid circular dependency with the "metriclabel" package.
+	MetricLabelEventsInverseTable = "metricLabels"
+	// MetricLabelEventsColumn is the table column denoting the MetricLabel_events relation/edge.
+	MetricLabelEventsColumn = "metric_label_events"
+	// MetricEndpointEventsTable is the table that holds the MetricEndpoint_events relation/edge.
+	MetricEndpointEventsTable = "events"
+	// MetricEndpointEventsInverseTable is the table name for the MetricEndpoint entity.
+	// It exists in this package in order to avoid circular dependency with the "metricendpoint" package.
+	MetricEndpointEventsInverseTable = "metricEndpoints"
+	// MetricEndpointEventsColumn is the table column denoting the MetricEndpoint_events relation/edge.
+	MetricEndpointEventsColumn = "metric_endpoint_events"
 )
 
 // Columns holds all SQL columns for event fields.

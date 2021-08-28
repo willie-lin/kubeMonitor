@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/predicate"
 )
 
@@ -1438,6 +1439,90 @@ func PodIdLT(v uint) predicate.Event {
 func PodIdLTE(v uint) predicate.Event {
 	return predicate.Event(func(s *sql.Selector) {
 		s.Where(sql.LTE(s.C(FieldPodId), v))
+	})
+}
+
+// HasMetricNameEvents applies the HasEdge predicate on the "MetricName_events" edge.
+func HasMetricNameEvents() predicate.Event {
+	return predicate.Event(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(MetricNameEventsTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, MetricNameEventsTable, MetricNameEventsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasMetricNameEventsWith applies the HasEdge predicate on the "MetricName_events" edge with a given conditions (other predicates).
+func HasMetricNameEventsWith(preds ...predicate.MetricName) predicate.Event {
+	return predicate.Event(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(MetricNameEventsInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, MetricNameEventsTable, MetricNameEventsColumn),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasMetricLabelEvents applies the HasEdge predicate on the "MetricLabel_events" edge.
+func HasMetricLabelEvents() predicate.Event {
+	return predicate.Event(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(MetricLabelEventsTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, MetricLabelEventsTable, MetricLabelEventsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasMetricLabelEventsWith applies the HasEdge predicate on the "MetricLabel_events" edge with a given conditions (other predicates).
+func HasMetricLabelEventsWith(preds ...predicate.MetricLabel) predicate.Event {
+	return predicate.Event(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(MetricLabelEventsInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, MetricLabelEventsTable, MetricLabelEventsColumn),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasMetricEndpointEvents applies the HasEdge predicate on the "MetricEndpoint_events" edge.
+func HasMetricEndpointEvents() predicate.Event {
+	return predicate.Event(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(MetricEndpointEventsTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, MetricEndpointEventsTable, MetricEndpointEventsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasMetricEndpointEventsWith applies the HasEdge predicate on the "MetricEndpoint_events" edge with a given conditions (other predicates).
+func HasMetricEndpointEventsWith(preds ...predicate.MetricEndpoint) predicate.Event {
+	return predicate.Event(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(MetricEndpointEventsInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, MetricEndpointEventsTable, MetricEndpointEventsColumn),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
 	})
 }
 
