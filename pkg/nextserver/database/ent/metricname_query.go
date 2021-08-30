@@ -15,6 +15,7 @@ import (
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/event"
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/metric"
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/metricname"
+	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/metrictype"
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/predicate"
 )
 
@@ -30,6 +31,7 @@ type MetricNameQuery struct {
 	// eager-loading edges.
 	withMetrics *MetricQuery
 	withEvents  *EventQuery
+	withOwners  *MetricTypeQuery
 	withFKs     bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -104,6 +106,28 @@ func (mnq *MetricNameQuery) QueryEvents() *EventQuery {
 			sqlgraph.From(metricname.Table, metricname.FieldID, selector),
 			sqlgraph.To(event.Table, event.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, metricname.EventsTable, metricname.EventsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(mnq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryOwners chains the current query on the "owners" edge.
+func (mnq *MetricNameQuery) QueryOwners() *MetricTypeQuery {
+	query := &MetricTypeQuery{config: mnq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := mnq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := mnq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(metricname.Table, metricname.FieldID, selector),
+			sqlgraph.To(metrictype.Table, metrictype.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, metricname.OwnersTable, metricname.OwnersColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(mnq.driver.Dialect(), step)
 		return fromU, nil
@@ -294,6 +318,7 @@ func (mnq *MetricNameQuery) Clone() *MetricNameQuery {
 		predicates:  append([]predicate.MetricName{}, mnq.predicates...),
 		withMetrics: mnq.withMetrics.Clone(),
 		withEvents:  mnq.withEvents.Clone(),
+		withOwners:  mnq.withOwners.Clone(),
 		// clone intermediate query.
 		sql:  mnq.sql.Clone(),
 		path: mnq.path,
@@ -319,6 +344,17 @@ func (mnq *MetricNameQuery) WithEvents(opts ...func(*EventQuery)) *MetricNameQue
 		opt(query)
 	}
 	mnq.withEvents = query
+	return mnq
+}
+
+// WithOwners tells the query-builder to eager-load the nodes that are connected to
+// the "owners" edge. The optional arguments are used to configure the query builder of the edge.
+func (mnq *MetricNameQuery) WithOwners(opts ...func(*MetricTypeQuery)) *MetricNameQuery {
+	query := &MetricTypeQuery{config: mnq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	mnq.withOwners = query
 	return mnq
 }
 
@@ -388,11 +424,15 @@ func (mnq *MetricNameQuery) sqlAll(ctx context.Context) ([]*MetricName, error) {
 		nodes       = []*MetricName{}
 		withFKs     = mnq.withFKs
 		_spec       = mnq.querySpec()
-		loadedTypes = [2]bool{
+		loadedTypes = [3]bool{
 			mnq.withMetrics != nil,
 			mnq.withEvents != nil,
+			mnq.withOwners != nil,
 		}
 	)
+	if mnq.withOwners != nil {
+		withFKs = true
+	}
 	if withFKs {
 		_spec.Node.Columns = append(_spec.Node.Columns, metricname.ForeignKeys...)
 	}
@@ -471,6 +511,35 @@ func (mnq *MetricNameQuery) sqlAll(ctx context.Context) ([]*MetricName, error) {
 				return nil, fmt.Errorf(`unexpected foreign-key "metric_name_events" returned %v for node %v`, *fk, n.ID)
 			}
 			node.Edges.Events = append(node.Edges.Events, n)
+		}
+	}
+
+	if query := mnq.withOwners; query != nil {
+		ids := make([]uint, 0, len(nodes))
+		nodeids := make(map[uint][]*MetricName)
+		for i := range nodes {
+			if nodes[i].metric_type_metric_names == nil {
+				continue
+			}
+			fk := *nodes[i].metric_type_metric_names
+			if _, ok := nodeids[fk]; !ok {
+				ids = append(ids, fk)
+			}
+			nodeids[fk] = append(nodeids[fk], nodes[i])
+		}
+		query.Where(metrictype.IDIn(ids...))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			nodes, ok := nodeids[n.ID]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "metric_type_metric_names" returned %v`, n.ID)
+			}
+			for i := range nodes {
+				nodes[i].Edges.Owners = n
+			}
 		}
 	}
 

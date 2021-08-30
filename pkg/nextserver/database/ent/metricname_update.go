@@ -13,6 +13,7 @@ import (
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/event"
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/metric"
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/metricname"
+	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/metrictype"
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/predicate"
 )
 
@@ -96,6 +97,25 @@ func (mnu *MetricNameUpdate) AddEvents(e ...*Event) *MetricNameUpdate {
 	return mnu.AddEventIDs(ids...)
 }
 
+// SetOwnersID sets the "owners" edge to the MetricType entity by ID.
+func (mnu *MetricNameUpdate) SetOwnersID(id uint) *MetricNameUpdate {
+	mnu.mutation.SetOwnersID(id)
+	return mnu
+}
+
+// SetNillableOwnersID sets the "owners" edge to the MetricType entity by ID if the given value is not nil.
+func (mnu *MetricNameUpdate) SetNillableOwnersID(id *uint) *MetricNameUpdate {
+	if id != nil {
+		mnu = mnu.SetOwnersID(*id)
+	}
+	return mnu
+}
+
+// SetOwners sets the "owners" edge to the MetricType entity.
+func (mnu *MetricNameUpdate) SetOwners(m *MetricType) *MetricNameUpdate {
+	return mnu.SetOwnersID(m.ID)
+}
+
 // Mutation returns the MetricNameMutation object of the builder.
 func (mnu *MetricNameUpdate) Mutation() *MetricNameMutation {
 	return mnu.mutation
@@ -141,6 +161,12 @@ func (mnu *MetricNameUpdate) RemoveEvents(e ...*Event) *MetricNameUpdate {
 		ids[i] = e[i].ID
 	}
 	return mnu.RemoveEventIDs(ids...)
+}
+
+// ClearOwners clears the "owners" edge to the MetricType entity.
+func (mnu *MetricNameUpdate) ClearOwners() *MetricNameUpdate {
+	mnu.mutation.ClearOwners()
+	return mnu
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -394,6 +420,41 @@ func (mnu *MetricNameUpdate) sqlSave(ctx context.Context) (n int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if mnu.mutation.OwnersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   metricname.OwnersTable,
+			Columns: []string{metricname.OwnersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUint,
+					Column: metrictype.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := mnu.mutation.OwnersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   metricname.OwnersTable,
+			Columns: []string{metricname.OwnersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUint,
+					Column: metrictype.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, mnu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{metricname.Label}
@@ -480,6 +541,25 @@ func (mnuo *MetricNameUpdateOne) AddEvents(e ...*Event) *MetricNameUpdateOne {
 	return mnuo.AddEventIDs(ids...)
 }
 
+// SetOwnersID sets the "owners" edge to the MetricType entity by ID.
+func (mnuo *MetricNameUpdateOne) SetOwnersID(id uint) *MetricNameUpdateOne {
+	mnuo.mutation.SetOwnersID(id)
+	return mnuo
+}
+
+// SetNillableOwnersID sets the "owners" edge to the MetricType entity by ID if the given value is not nil.
+func (mnuo *MetricNameUpdateOne) SetNillableOwnersID(id *uint) *MetricNameUpdateOne {
+	if id != nil {
+		mnuo = mnuo.SetOwnersID(*id)
+	}
+	return mnuo
+}
+
+// SetOwners sets the "owners" edge to the MetricType entity.
+func (mnuo *MetricNameUpdateOne) SetOwners(m *MetricType) *MetricNameUpdateOne {
+	return mnuo.SetOwnersID(m.ID)
+}
+
 // Mutation returns the MetricNameMutation object of the builder.
 func (mnuo *MetricNameUpdateOne) Mutation() *MetricNameMutation {
 	return mnuo.mutation
@@ -525,6 +605,12 @@ func (mnuo *MetricNameUpdateOne) RemoveEvents(e ...*Event) *MetricNameUpdateOne 
 		ids[i] = e[i].ID
 	}
 	return mnuo.RemoveEventIDs(ids...)
+}
+
+// ClearOwners clears the "owners" edge to the MetricType entity.
+func (mnuo *MetricNameUpdateOne) ClearOwners() *MetricNameUpdateOne {
+	mnuo.mutation.ClearOwners()
+	return mnuo
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -794,6 +880,41 @@ func (mnuo *MetricNameUpdateOne) sqlSave(ctx context.Context) (_node *MetricName
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeInt,
 					Column: event.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if mnuo.mutation.OwnersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   metricname.OwnersTable,
+			Columns: []string{metricname.OwnersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUint,
+					Column: metrictype.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := mnuo.mutation.OwnersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   metricname.OwnersTable,
+			Columns: []string{metricname.OwnersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUint,
+					Column: metrictype.FieldID,
 				},
 			},
 		}

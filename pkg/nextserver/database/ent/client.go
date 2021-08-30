@@ -2761,6 +2761,22 @@ func (c *MetricNameClient) QueryEvents(mn *MetricName) *EventQuery {
 	return query
 }
 
+// QueryOwners queries the owners edge of a MetricName.
+func (c *MetricNameClient) QueryOwners(mn *MetricName) *MetricTypeQuery {
+	query := &MetricTypeQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := mn.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(metricname.Table, metricname.FieldID, id),
+			sqlgraph.To(metrictype.Table, metrictype.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, metricname.OwnersTable, metricname.OwnersColumn),
+		)
+		fromV = sqlgraph.Neighbors(mn.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *MetricNameClient) Hooks() []Hook {
 	return c.hooks.MetricName

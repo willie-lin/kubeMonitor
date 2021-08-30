@@ -9,6 +9,7 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/metricname"
+	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/metrictype"
 )
 
 // MetricName is the model entity for the MetricName schema.
@@ -40,9 +41,11 @@ type MetricNameEdges struct {
 	Metrics []*Metric `json:"metrics,omitempty"`
 	// Events holds the value of the events edge.
 	Events []*Event `json:"events,omitempty"`
+	// Owners holds the value of the owners edge.
+	Owners *MetricType `json:"owners,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
 }
 
 // MetricsOrErr returns the Metrics value or an error if the edge
@@ -61,6 +64,20 @@ func (e MetricNameEdges) EventsOrErr() ([]*Event, error) {
 		return e.Events, nil
 	}
 	return nil, &NotLoadedError{edge: "events"}
+}
+
+// OwnersOrErr returns the Owners value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e MetricNameEdges) OwnersOrErr() (*MetricType, error) {
+	if e.loadedTypes[2] {
+		if e.Owners == nil {
+			// The edge owners was loaded in eager-loading,
+			// but was not found.
+			return nil, &NotFoundError{label: metrictype.Label}
+		}
+		return e.Owners, nil
+	}
+	return nil, &NotLoadedError{edge: "owners"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -153,6 +170,11 @@ func (mn *MetricName) QueryMetrics() *MetricQuery {
 // QueryEvents queries the "events" edge of the MetricName entity.
 func (mn *MetricName) QueryEvents() *EventQuery {
 	return (&MetricNameClient{config: mn.config}).QueryEvents(mn)
+}
+
+// QueryOwners queries the "owners" edge of the MetricName entity.
+func (mn *MetricName) QueryOwners() *MetricTypeQuery {
+	return (&MetricNameClient{config: mn.config}).QueryOwners(mn)
 }
 
 // Update returns a builder for updating this MetricName.

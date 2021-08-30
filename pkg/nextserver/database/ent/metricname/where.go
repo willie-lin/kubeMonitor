@@ -717,6 +717,34 @@ func HasEventsWith(preds ...predicate.Event) predicate.MetricName {
 	})
 }
 
+// HasOwners applies the HasEdge predicate on the "owners" edge.
+func HasOwners() predicate.MetricName {
+	return predicate.MetricName(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(OwnersTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, OwnersTable, OwnersColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasOwnersWith applies the HasEdge predicate on the "owners" edge with a given conditions (other predicates).
+func HasOwnersWith(preds ...predicate.MetricType) predicate.MetricName {
+	return predicate.MetricName(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(OwnersInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, OwnersTable, OwnersColumn),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.MetricName) predicate.MetricName {
 	return predicate.MetricName(func(s *sql.Selector) {

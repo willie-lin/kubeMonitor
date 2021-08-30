@@ -27,6 +27,8 @@ const (
 	EdgeMetrics = "metrics"
 	// EdgeEvents holds the string denoting the events edge name in mutations.
 	EdgeEvents = "events"
+	// EdgeOwners holds the string denoting the owners edge name in mutations.
+	EdgeOwners = "owners"
 	// Table holds the table name of the metricname in the database.
 	Table = "metricNames"
 	// MetricsTable is the table that holds the metrics relation/edge.
@@ -43,6 +45,13 @@ const (
 	EventsInverseTable = "events"
 	// EventsColumn is the table column denoting the events relation/edge.
 	EventsColumn = "metric_name_events"
+	// OwnersTable is the table that holds the owners relation/edge.
+	OwnersTable = "metricNames"
+	// OwnersInverseTable is the table name for the MetricType entity.
+	// It exists in this package in order to avoid circular dependency with the "metrictype" package.
+	OwnersInverseTable = "metricTypes"
+	// OwnersColumn is the table column denoting the owners relation/edge.
+	OwnersColumn = "metric_type_metric_names"
 )
 
 // Columns holds all SQL columns for metricname fields.

@@ -19790,6 +19790,8 @@ type MetricNameMutation struct {
 	events         map[int]struct{}
 	removedevents  map[int]struct{}
 	clearedevents  bool
+	owners         *uint
+	clearedowners  bool
 	done           bool
 	oldValue       func(context.Context) (*MetricName, error)
 	predicates     []predicate.MetricName
@@ -20224,6 +20226,45 @@ func (m *MetricNameMutation) ResetEvents() {
 	m.removedevents = nil
 }
 
+// SetOwnersID sets the "owners" edge to the MetricType entity by id.
+func (m *MetricNameMutation) SetOwnersID(id uint) {
+	m.owners = &id
+}
+
+// ClearOwners clears the "owners" edge to the MetricType entity.
+func (m *MetricNameMutation) ClearOwners() {
+	m.clearedowners = true
+}
+
+// OwnersCleared reports if the "owners" edge to the MetricType entity was cleared.
+func (m *MetricNameMutation) OwnersCleared() bool {
+	return m.clearedowners
+}
+
+// OwnersID returns the "owners" edge ID in the mutation.
+func (m *MetricNameMutation) OwnersID() (id uint, exists bool) {
+	if m.owners != nil {
+		return *m.owners, true
+	}
+	return
+}
+
+// OwnersIDs returns the "owners" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// OwnersID instead. It exists only for internal usage by the builders.
+func (m *MetricNameMutation) OwnersIDs() (ids []uint) {
+	if id := m.owners; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetOwners resets all changes to the "owners" edge.
+func (m *MetricNameMutation) ResetOwners() {
+	m.owners = nil
+	m.clearedowners = false
+}
+
 // Where appends a list predicates to the MetricNameMutation builder.
 func (m *MetricNameMutation) Where(ps ...predicate.MetricName) {
 	m.predicates = append(m.predicates, ps...)
@@ -20442,12 +20483,15 @@ func (m *MetricNameMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *MetricNameMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.metrics != nil {
 		edges = append(edges, metricname.EdgeMetrics)
 	}
 	if m.events != nil {
 		edges = append(edges, metricname.EdgeEvents)
+	}
+	if m.owners != nil {
+		edges = append(edges, metricname.EdgeOwners)
 	}
 	return edges
 }
@@ -20468,13 +20512,17 @@ func (m *MetricNameMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case metricname.EdgeOwners:
+		if id := m.owners; id != nil {
+			return []ent.Value{*id}
+		}
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *MetricNameMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.removedmetrics != nil {
 		edges = append(edges, metricname.EdgeMetrics)
 	}
@@ -20506,12 +20554,15 @@ func (m *MetricNameMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *MetricNameMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.clearedmetrics {
 		edges = append(edges, metricname.EdgeMetrics)
 	}
 	if m.clearedevents {
 		edges = append(edges, metricname.EdgeEvents)
+	}
+	if m.clearedowners {
+		edges = append(edges, metricname.EdgeOwners)
 	}
 	return edges
 }
@@ -20524,6 +20575,8 @@ func (m *MetricNameMutation) EdgeCleared(name string) bool {
 		return m.clearedmetrics
 	case metricname.EdgeEvents:
 		return m.clearedevents
+	case metricname.EdgeOwners:
+		return m.clearedowners
 	}
 	return false
 }
@@ -20532,6 +20585,9 @@ func (m *MetricNameMutation) EdgeCleared(name string) bool {
 // if that edge is not defined in the schema.
 func (m *MetricNameMutation) ClearEdge(name string) error {
 	switch name {
+	case metricname.EdgeOwners:
+		m.ClearOwners()
+		return nil
 	}
 	return fmt.Errorf("unknown MetricName unique edge %s", name)
 }
@@ -20545,6 +20601,9 @@ func (m *MetricNameMutation) ResetEdge(name string) error {
 		return nil
 	case metricname.EdgeEvents:
 		m.ResetEvents()
+		return nil
+	case metricname.EdgeOwners:
+		m.ResetOwners()
 		return nil
 	}
 	return fmt.Errorf("unknown MetricName edge %s", name)

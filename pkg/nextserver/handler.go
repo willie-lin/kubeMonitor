@@ -1,4 +1,4 @@
-package main
+package nextserver
 
 import (
 	"context"
@@ -27,12 +27,12 @@ func Hello(client *ent.Client) echo.HandlerFunc {
 	}
 }
 
-type Controller struct {
-	client *ent.Client
-}
+//type Controller struct {
+//	client *ent.Client
+//}
 
 // FindRemoteAgent find remote agent
-func (controller *Controller) FindRemoteAgent() echo.HandlerFunc {
+func (s *NextServer) FindRemoteAgent() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ag := new(ent.Agent)
 		log, _ := zap.NewDevelopment()
@@ -42,7 +42,7 @@ func (controller *Controller) FindRemoteAgent() echo.HandlerFunc {
 
 		}
 
-		agents, err := controller.client.Agent.Query().Where(agent.MachineIdEQ(ag.MachineId)).First(context.Background())
+		agents, err := s.controller.client.Agent.Query().Where(agent.MachineIdEQ(ag.MachineId)).First(context.Background())
 		if err != nil {
 			if ent.IsNotFound(err) {
 				c.Logger().Error("Get: ", err)
@@ -56,7 +56,7 @@ func (controller *Controller) FindRemoteAgent() echo.HandlerFunc {
 }
 
 // FindNodeByAgent find node agent
-func (controller *Controller) FindNodeByAgent() echo.HandlerFunc {
+func (s *NextServer) FindNodeByAgent() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		nd := new(ent.Node)
 
@@ -65,7 +65,7 @@ func (controller *Controller) FindNodeByAgent() echo.HandlerFunc {
 			log.Fatal("json decode error", zap.Error(err))
 			return c.JSON(http.StatusBadRequest, "json: "+err.Error())
 		}
-		nodes, err := controller.client.Node.Query().Where(node.AgentIdEQ(nd.AgentId)).Only(context.Background())
+		nodes, err := s.controller.client.Node.Query().Where(node.AgentIdEQ(nd.AgentId)).Only(context.Background())
 		if err != nil {
 			if !ent.IsNotFound(err) {
 				return c.String(http.StatusBadRequest, "Get: "+err.Error())
@@ -78,7 +78,7 @@ func (controller *Controller) FindNodeByAgent() echo.HandlerFunc {
 }
 
 // FindCluster Find Cluster
-func (controller *Controller) FindCluster() echo.HandlerFunc {
+func (s *NextServer) FindCluster() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		clu := new(ent.Cluster)
 
@@ -87,12 +87,12 @@ func (controller *Controller) FindCluster() echo.HandlerFunc {
 			log.Fatal("json decode error", zap.Error(err))
 			return c.JSON(http.StatusBadRequest, "json:"+err.Error())
 		}
-		result, err := controller.client.Cluster.Query().Where(cluster.NameEQ(clu.Name)).Only(context.Background())
+		result, err := s.controller.client.Cluster.Query().Where(cluster.NameEQ(clu.Name)).Only(context.Background())
 		if err != nil {
 			return err
 		}
 
-		clusters, err := controller.client.Cluster.Create().
+		clusters, err := s.controller.client.Cluster.Create().
 			SetID(result.ID).
 			SetName(result.Name).
 			SetDescription(result.Description).
@@ -109,7 +109,7 @@ func (controller *Controller) FindCluster() echo.HandlerFunc {
 }
 
 // FindMetricEndpoint findMetricEndpoint
-func (controller *Controller) FindMetricEndpoint() echo.HandlerFunc {
+func (s *NextServer) FindMetricEndpoint() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		me := new(ent.MetricEndpoint)
 
@@ -118,12 +118,12 @@ func (controller *Controller) FindMetricEndpoint() echo.HandlerFunc {
 			log.Fatal("json decode error", zap.Error(err))
 			return c.JSON(http.StatusBadRequest, "json:"+err.Error())
 		}
-		result, err := controller.client.MetricEndpoint.Query().Where(metricendpoint.PathEQ(me.Path)).First(context.Background())
+		result, err := s.controller.client.MetricEndpoint.Query().Where(metricendpoint.PathEQ(me.Path)).First(context.Background())
 		if err != nil {
 			return fmt.Errorf("faild querying err: %w", err)
 		}
 
-		metricEndpoint, err := controller.client.MetricEndpoint.Create().SetPath(result.Path).Save(context.Background())
+		metricEndpoint, err := s.controller.client.MetricEndpoint.Create().SetPath(result.Path).Save(context.Background())
 		if err != nil {
 			return err
 		}
@@ -132,7 +132,7 @@ func (controller *Controller) FindMetricEndpoint() echo.HandlerFunc {
 }
 
 // FindMetricType Find Metric Type
-func (controller *Controller) FindMetricType() echo.HandlerFunc {
+func (s *NextServer) FindMetricType() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		mt := new(ent.MetricType)
 
@@ -141,17 +141,17 @@ func (controller *Controller) FindMetricType() echo.HandlerFunc {
 			log.Fatal("json decode error", zap.Error(err))
 			return c.JSON(http.StatusBadRequest, "json: "+err.Error())
 		}
-		result, err := controller.client.MetricType.Query().Where(metrictype.NameNEQ(mt.Name)).First(context.Background())
+		result, err := s.controller.client.MetricType.Query().Where(metrictype.NameNEQ(mt.Name)).First(context.Background())
 		if err != nil {
 			return fmt.Errorf("faild querying err: %w", err)
 		}
-		metricType, err := controller.client.MetricType.Create().SetName(result.Name).Save(context.Background())
+		metricType, err := s.controller.client.MetricType.Create().SetName(result.Name).Save(context.Background())
 		return c.JSON(http.StatusOK, &metricType)
 	}
 }
 
 // FindMetricName findMetricName
-func (controller *Controller) FindMetricName() echo.HandlerFunc {
+func (s *NextServer) FindMetricName() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		mn := new(ent.MetricName)
 		metricType := new(ent.MetricType)
@@ -162,11 +162,11 @@ func (controller *Controller) FindMetricName() echo.HandlerFunc {
 			return c.JSON(http.StatusBadRequest, "json: "+err.Error())
 		}
 
-		result, err := controller.client.MetricName.Query().Where(metricname.NameEQ(mn.Name)).First(context.Background())
+		result, err := s.controller.client.MetricName.Query().Where(metricname.NameEQ(mn.Name)).First(context.Background())
 		if err != nil {
 			return fmt.Errorf("faild querying err: %w", err)
 		}
-		metricName, err := controller.client.MetricName.Create().
+		metricName, err := s.controller.client.MetricName.Create().
 			SetName(result.Name).
 			SetTypeId(metricType.ID).
 			Save(context.Background())
@@ -175,7 +175,7 @@ func (controller *Controller) FindMetricName() echo.HandlerFunc {
 }
 
 // FindMetricLabel findMetricLabel
-func (controller *Controller) FindMetricLabel() echo.HandlerFunc {
+func (s *NextServer) FindMetricLabel() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ml := new(ent.MetricLabel)
 
@@ -185,12 +185,12 @@ func (controller *Controller) FindMetricLabel() echo.HandlerFunc {
 			return c.JSON(http.StatusBadRequest, "json: "+err.Error())
 		}
 
-		result, err := controller.client.MetricLabel.Query().Where(metriclabel.LabelEQ(ml.Label)).Only(context.Background())
+		result, err := s.controller.client.MetricLabel.Query().Where(metriclabel.LabelEQ(ml.Label)).Only(context.Background())
 		if err != nil {
 			return fmt.Errorf("faild querying err: %w", err)
 		}
 
-		metricLabel, err := controller.client.MetricLabel.Create().
+		metricLabel, err := s.controller.client.MetricLabel.Create().
 			SetLabel(result.Label).
 			SetCreatedAt(time.Now()).
 			SetUpdatedAt(time.Now()).Save(context.Background())
@@ -200,7 +200,7 @@ func (controller *Controller) FindMetricLabel() echo.HandlerFunc {
 }
 
 // FindNode findNode
-func (controller *Controller) FindNode() echo.HandlerFunc {
+func (s *NextServer) FindNode() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		nd := new(ent.Node)
 		log, _ := zap.NewDevelopment()
@@ -209,7 +209,7 @@ func (controller *Controller) FindNode() echo.HandlerFunc {
 			return c.JSON(http.StatusBadRequest, "json: "+err.Error())
 		}
 
-		node, err := controller.client.Node.Query().Where(node.HostEQ(nd.Host)).Where(node.ClusterId(nd.ClusterId)).Only(context.Background())
+		node, err := s.controller.client.Node.Query().Where(node.HostEQ(nd.Host)).Where(node.ClusterId(nd.ClusterId)).Only(context.Background())
 		if err != nil {
 			return fmt.Errorf("faild querying err: %w", err)
 		}
@@ -218,7 +218,7 @@ func (controller *Controller) FindNode() echo.HandlerFunc {
 }
 
 // FindNodeById FindNodeById
-func (controller *Controller) FindNodeById() echo.HandlerFunc {
+func (s *NextServer) FindNodeById() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		nd := new(ent.Node)
 		log, _ := zap.NewDevelopment()
@@ -227,7 +227,7 @@ func (controller *Controller) FindNodeById() echo.HandlerFunc {
 			return c.JSON(http.StatusBadRequest, "json: "+err.Error())
 		}
 
-		node, err := controller.client.Node.Query().Where(node.IDEQ(nd.ID)).Where(node.ClusterId(nd.ClusterId)).Only(context.Background())
+		node, err := s.controller.client.Node.Query().Where(node.IDEQ(nd.ID)).Where(node.ClusterId(nd.ClusterId)).Only(context.Background())
 		if err != nil {
 			return fmt.Errorf("faild querying err: %w", err)
 		}
@@ -236,7 +236,7 @@ func (controller *Controller) FindNodeById() echo.HandlerFunc {
 }
 
 // FindContainer find Container
-func (controller *Controller) FindContainer() echo.HandlerFunc {
+func (s *NextServer) FindContainer() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		cot := new(ent.Container)
 		log, _ := zap.NewDevelopment()
@@ -245,7 +245,7 @@ func (controller *Controller) FindContainer() echo.HandlerFunc {
 			return c.JSON(http.StatusBadRequest, "json: "+err.Error())
 		}
 
-		container, err := controller.client.Container.Query().Where(container.NameEQ(cot.Name)).Where(container.ClusterIdEQ(cot.ClusterId)).Where(container.NodeIdEQ(cot.NodeId)).Only(context.Background())
+		container, err := s.controller.client.Container.Query().Where(container.NameEQ(cot.Name)).Where(container.ClusterIdEQ(cot.ClusterId)).Where(container.NodeIdEQ(cot.NodeId)).Only(context.Background())
 		if err != nil {
 			return fmt.Errorf("faild querying err: %w", err)
 		}
@@ -254,7 +254,7 @@ func (controller *Controller) FindContainer() echo.HandlerFunc {
 }
 
 // FindProcess find Process
-func (controller *Controller) FindProcess() echo.HandlerFunc {
+func (s *NextServer) FindProcess() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ps := new(ent.Proces)
 		log, _ := zap.NewDevelopment()
@@ -263,7 +263,7 @@ func (controller *Controller) FindProcess() echo.HandlerFunc {
 			return c.JSON(http.StatusBadRequest, "json: "+err.Error())
 		}
 
-		processes, err := controller.client.Proces.Query().Where(proces.NameEQ(ps.Name)).Where(proces.PIdEQ(ps.PId)).
+		processes, err := s.controller.client.Proces.Query().Where(proces.NameEQ(ps.Name)).Where(proces.PIdEQ(ps.PId)).
 			Where(proces.NodeIdEQ(ps.NodeId)).Where(proces.ClusterIdEQ(ps.ClusterId)).Only(context.Background())
 		if err != nil {
 			return fmt.Errorf("faild querying err: %w", err)

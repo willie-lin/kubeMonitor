@@ -44,7 +44,7 @@ func (MetricName) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("metrics", Metric.Type),
 		edge.To("events", Event.Type),
-		edge.From("MetricType_MetricNames", MetricType.Type).Ref("MetricNames").Unique(),
+		edge.From("owners", MetricType.Type).Ref("metricNames").Unique(),
 	}
 }
 

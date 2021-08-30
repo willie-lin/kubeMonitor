@@ -13,6 +13,7 @@ import (
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/event"
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/metric"
 	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/metricname"
+	"github.com/willie-lin/kubeMonitor/pkg/nextserver/database/ent/metrictype"
 )
 
 // MetricNameCreate is the builder for creating a MetricName entity.
@@ -116,6 +117,25 @@ func (mnc *MetricNameCreate) AddEvents(e ...*Event) *MetricNameCreate {
 		ids[i] = e[i].ID
 	}
 	return mnc.AddEventIDs(ids...)
+}
+
+// SetOwnersID sets the "owners" edge to the MetricType entity by ID.
+func (mnc *MetricNameCreate) SetOwnersID(id uint) *MetricNameCreate {
+	mnc.mutation.SetOwnersID(id)
+	return mnc
+}
+
+// SetNillableOwnersID sets the "owners" edge to the MetricType entity by ID if the given value is not nil.
+func (mnc *MetricNameCreate) SetNillableOwnersID(id *uint) *MetricNameCreate {
+	if id != nil {
+		mnc = mnc.SetOwnersID(*id)
+	}
+	return mnc
+}
+
+// SetOwners sets the "owners" edge to the MetricType entity.
+func (mnc *MetricNameCreate) SetOwners(m *MetricType) *MetricNameCreate {
+	return mnc.SetOwnersID(m.ID)
 }
 
 // Mutation returns the MetricNameMutation object of the builder.
@@ -345,6 +365,26 @@ func (mnc *MetricNameCreate) createSpec() (*MetricName, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := mnc.mutation.OwnersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   metricname.OwnersTable,
+			Columns: []string{metricname.OwnersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeUint,
+					Column: metrictype.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.metric_type_metric_names = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

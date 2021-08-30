@@ -1,4 +1,4 @@
-package main
+package nextserver
 
 import (
 	"github.com/dgraph-io/ristretto"
@@ -34,6 +34,10 @@ type ServerConfig struct {
 	ApiPort         int    `json:"api_port"`
 }
 
+type Controller struct {
+	client *ent.Client
+}
+
 // DatabaseConfig database config
 type DatabaseConfig struct {
 	Host     string `json:"host"`
@@ -67,21 +71,13 @@ type Config struct {
 	BasicRule BasicRuleConfig
 }
 
-type IncidentItem struct {
-}
-
-type Metric struct {
-}
-
 type NextServer struct {
-	sync.RWMutex
-
 	config *Config
-	db     *ent.Client
-	dbLock map[string]*sync.RWMutex
+	//db     *ent.Client
+	controller Controller
 
-	agentMap map[string]*ent.Agent
-	nodeMap  map[string]*ent.Node
+	agentMap map[string]*Agent
+	nodeMap  map[string]*Node
 
 	cache *ristretto.Cache
 
@@ -89,7 +85,17 @@ type NextServer struct {
 	metricSaveCounter     uint64
 	metricSaveCounterLock sync.RWMutex
 
-	incidentMap map[string]*IncidentItem
-
+	incidentMap   map[string]*IncidentItem
 	metricChannel chan Metric
 }
+
+//func (s *NextServer) addAgent(agentUuid string, agent *Agent)  {
+//
+//	s.agentMap[agentUuid] = agent
+//	agent.Online = true
+//
+//	result, err := s.controller.client.Agent.Update().SetOnline(true)
+//	if err != nil {
+//		log.Printf("failed to update agent: %v\n", err)
+//	}
+//}
