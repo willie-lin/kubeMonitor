@@ -24,9 +24,10 @@ type Incident struct {
 	incidentMap map[string][]*IncidentItem
 }
 
-func (s *NextServer) InitBasicRuleChecker() {
-	s.CheckNodeBasicIncident(s.metricChannel)
-}
+//
+//func (s *NextServer) InitBasicRuleChecker() {
+//	s.CheckNodeBasicIncident(s.metricChannel)
+//}
 
 func (s *NextServer) CheckNodeBasicIncident(nodeMetricChan chan ent.Metric) {
 	//gaugeType := Controller.FindMetricType()

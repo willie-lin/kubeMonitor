@@ -18,75 +18,116 @@ limitations under the License.
 package main
 
 import (
-	"context"
-	"flag"
 	"fmt"
-	"path/filepath"
-	"time"
-
-	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/client-go/util/homedir"
-	//
-	// Uncomment to load all auth plugins
-	// _ "k8s.io/client-go/plugin/pkg/client/auth"
-	//
-	// Or uncomment to load specific auth plugins
-	// _ "k8s.io/client-go/plugin/pkg/client/auth/azure"
-	// _ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-	// _ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
-	// _ "k8s.io/client-go/plugin/pkg/client/auth/openstack"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 func main() {
-	var kubeconfig *string
-	if home := homedir.HomeDir(); home != "" {
-		kubeconfig = flag.String("kubeconfig", filepath.Join(home, "kubeconfig", "config"), "(optional) absolute path to the kubeconfig file")
-	} else {
-		kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
-	}
-	flag.Parse()
 
-	fmt.Println(kubeconfig)
-
-	// use the current context in kubeconfig
-	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
+	clientSet, err := GetClientSet()
 	if err != nil {
 		panic(err.Error())
 	}
 
-	// create the clientset
-	clientset, err := kubernetes.NewForConfig(config)
+	//deploymentsClient, _ := clientSet.AppsV1().Deployments().List(context.TODO(), metav1.ListOptions{})
+
+	fmt.Println(clientSet)
+
+	//var err error
+	//var nss []string
+	//nss, err := GetAllNamespaces(clientSet)
+	nss := GetAllNamespaces(clientSet)
+
+	fmt.Println(len(nss))
+
+	fmt.Println(nss[1:3])
+
+	discoveryClient, err := GetDiscoveryClient()
+	//discoveryClient, err := discovery.NewDiscoveryClientForConfig(getCondig())
 	if err != nil {
 		panic(err.Error())
 	}
-	for {
-		pods, err := clientset.CoreV1().Pods("").List(context.TODO(), metav1.ListOptions{})
+
+	//grv := schema.GroupVersionResource{Version: "v1", Resource: "pods"}
+	//
+	//unstructObj, err := dynamicClient.Resource(grv).Namespace("kube-system").List(context.TODO(), metav1.ListOptions{Limit: 100})
+	//if err != nil {
+	//	panic(err.Error())
+	//}
+
+	//podList := &apiv1.NewFirestoreAdminClient()
+
+	APIResourceListSlice, err := discoveryClient.ServerPreferredResources()
+	if err != nil {
+		panic(err.Error())
+	}
+
+	//fmt.Printf("APIGROUP: \n\n %v\n\n\n\n\n", APIGroup)
+
+	for _, singleAPIResourceList := range APIResourceListSlice {
+
+		groupVersionStr := singleAPIResourceList.GroupVersion
+		gv, err := schema.ParseGroupVersion(groupVersionStr)
 		if err != nil {
 			panic(err.Error())
 		}
-		fmt.Printf("There are %d pods in the cluster\n", len(pods.Items))
 
-		// Examples for error handling:
-		// - Use helper functions like e.g. errors.IsNotFound()
-		// - And/or cast to StatusError and use its properties like e.g. ErrStatus.Message
-		namespace := "default"
-		pod := "example-xxxxx"
-		_, err = clientset.CoreV1().Pods(namespace).Get(context.TODO(), pod, metav1.GetOptions{})
-		if errors.IsNotFound(err) {
-			fmt.Printf("Pod %s in namespace %s not found\n", pod, namespace)
-		} else if statusError, isStatus := err.(*errors.StatusError); isStatus {
-			fmt.Printf("Error getting pod %s in namespace %s: %v\n",
-				pod, namespace, statusError.ErrStatus.Message)
-		} else if err != nil {
-			panic(err.Error())
-		} else {
-			fmt.Printf("Found pod %s in namespace %s\n", pod, namespace)
-		}
+		fmt.Println("-------------------------------")
 
-		time.Sleep(10 * time.Second)
+		fmt.Printf("GV string [%v]\nGV", groupVersionStr, gv)
+
+		//for _, singleAPIResource := range APIRes
+
 	}
+
+	//listDeployment()
+
+	//var kubeconfig *string
+	//if home := homedir.HomeDir(); home != "" {
+	//	kubeconfig = flag.String("kubeconfig", filepath.Join(home, "kubeconfig", "config"), "(optional) absolute path to the kubeconfig file")
+	//} else {
+	//	kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
+	//}
+	//flag.Parse()
+	//
+	//fmt.Println(kubeconfig)
+	//
+	//// use the current context in kubeconfig
+	//config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
+	//if err != nil {
+	//	panic(err.Error())
+	//}
+	//
+	//// create the clientset
+	//clientset, err := kubernetes.NewForConfig(config)
+	//if err != nil {
+	//	panic(err.Error())
+	//}
+	//for {
+	//	pods, err := clientset.CoreV1().Pods("").List(context.TODO(), metav1.ListOptions{})
+	//	if err != nil {
+	//		panic(err.Error())
+	//	}
+	//	fmt.Printf("There are %d pods in the cluster\n", len(pods.Items))
+	//
+	//	// Examples for error handling:
+	//	// - Use helper functions like e.g. errors.IsNotFound()
+	//	// - And/or cast to StatusError and use its properties like e.g. ErrStatus.Message
+	//	namespace := "default"
+	//	pod := "example-xxxxx"
+	//	_, err = clientset.CoreV1().Pods(namespace).Get(context.TODO(), pod, metav1.GetOptions{})
+	//	if errors.IsNotFound(err) {
+	//		fmt.Printf("Pod %s in namespace %s not found\n", pod, namespace)
+	//	} else if statusError, isStatus := err.(*errors.StatusError); isStatus {
+	//		fmt.Printf("Error getting pod %s in namespace %s: %v\n",
+	//			pod, namespace, statusError.ErrStatus.Message)
+	//	} else if err != nil {
+	//		panic(err.Error())
+	//	} else {
+	//		fmt.Printf("Found pod %s in namespace %s\n", pod, namespace)
+	//	}
+	//
+	//	time.Sleep(10 * time.Second)
+	//}
 
 }
