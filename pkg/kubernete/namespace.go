@@ -7,7 +7,7 @@ import (
 	"log"
 )
 
-//func GetAllNamespaces(clientSet *kubernetes.Clientset) ([]string, error ){
+// GetAllNamespaces func GetAllNamespaces(clientSet *kubernetes.Clientset) ([]string, error ){
 func GetAllNamespaces(clientSet *kubernetes.Clientset) []string {
 	var namespaces []string
 	namespaceList, err := clientSet.CoreV1().Namespaces().List(context.TODO(), metav1.ListOptions{})

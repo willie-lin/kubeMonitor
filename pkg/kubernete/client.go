@@ -3,8 +3,10 @@ package main
 import (
 	"flag"
 	"fmt"
-	"k8s.io/client-go/discovery"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
 	"path/filepath"
@@ -33,31 +35,70 @@ func GetClientSet() (*kubernetes.Clientset, error) {
 	if err != nil {
 		panic(err.Error())
 	}
-	return clientSet, nil
+	return clientSet, err
 }
 
-func GetDiscoveryClient() (*discovery.DiscoveryClient, error) {
+func GetRestClient() (*rest.RESTClient, error) {
 
 	var kubeconfig *string
 	if home := homedir.HomeDir(); home != "" {
 		kubeconfig = flag.String("kubeconfig", filepath.Join(home, "kubeconfig", "config"), "(optional) absolute path to the kubeconfig file")
+		fmt.Println(kubeconfig)
 	} else {
 		kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
+		fmt.Println(kubeconfig)
 	}
-	flag.Parse()
+	//flag.Parse()
 
-	fmt.Println(kubeconfig)
+	//fmt.Println(kubeconfig)
 
 	// use the current context in kubeconfig
 	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
 	if err != nil {
-		panic(err.Error())
+		panic(err)
 	}
 
-	// create the client
-	discoveryClient, err := discovery.NewDiscoveryClientForConfig(config)
+	config.APIPath = "api"
+	config.GroupVersion = &corev1.SchemeGroupVersion
+	config.NegotiatedSerializer = scheme.Codecs
+
+	fmt.Println("Init RESTClient.")
+
+	// 定义RestClient，用于与k8s API server进行交互
+	restClient, err := rest.RESTClientFor(config)
 	if err != nil {
-		panic(err.Error())
+		panic(err)
 	}
-	return discoveryClient, nil
+	return restClient, err
 }
+
+//func GetDiscoveryClient() (*kubernetes.Clientset, error) {
+//
+//	var kubeconfig *string
+//	if home := homedir.HomeDir(); home != "" {
+//		kubeconfig = flag.String("kubeconfig", filepath.Join(home, "kubeconfig", "config"), "(optional) absolute path to the kubeconfig file")
+//	} else {
+//		kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
+//	}
+//	flag.Parse()
+//
+//	fmt.Println(kubeconfig)
+//
+//	// use the current context in kubeconfig
+//	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
+//	if err != nil {
+//		panic(err.Error())
+//	}
+//
+//	clientset, err := kubernetes.NewForConfig(config)
+//	if err != nil {
+//		panic(err.Error())
+//	}
+//
+//	// create the client
+//	//discoveryClient, err := clientset.DiscoveryClient.ServerGroupsAndResources()
+//	//if err != nil {
+//	//	panic(err.Error())
+//	//}
+//	return clientset, nil
+//}
