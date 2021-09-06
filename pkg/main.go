@@ -64,10 +64,15 @@ func main() {
 
 	//createDeployment(err, deploymentsClient, deployment)
 
-	e.POST("/", handler.CreateDeployment(deploymentsClient, deployment))
+	e.GET("/", handler.Hello(clientSet))
+	e.POST("/deployment", handler.CreateDeployment(deploymentsClient, deployment))
 	e.GET("/pods", handler.ListPods(clientSet))
 	e.GET("/namespaces", handler.GetAllNamespaces(clientSet))
 	e.GET("/watchInterface", handler.WatchDeployment(clientSet))
+	e.GET("/nodes", handler.ListNode(clientSet))
+	e.GET("/configmap", handler.ListConfigMap(clientSet))
+	e.GET("/services", handler.ListServices(clientSet))
+	e.GET("/secrets", handler.ListSecrets(clientSet))
 
 	//client, err := NewClient()
 	//if err != nil {

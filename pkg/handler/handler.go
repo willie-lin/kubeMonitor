@@ -5,10 +5,8 @@ import (
 	"fmt"
 	"github.com/labstack/echo/v4"
 	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/kubernetes/scheme"
 	v1 "k8s.io/client-go/kubernetes/typed/apps/v1"
 	"log"
 	"net/http"
@@ -90,28 +88,99 @@ func WatchDeployment(clientSet *kubernetes.Clientset) echo.HandlerFunc {
 
 }
 
-func podList() {
+func ListNode(clientSet *kubernetes.Clientset) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		var nodes []string
+		//var node1 map[string]string
 
-	restClient, err := GetRestClient()
-	if err != nil {
-		panic(err)
+		nodeList, err := clientSet.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{})
+		if err != nil {
+			return err
+		}
+		fmt.Println(nodeList)
+		for _, node := range nodeList.Items {
+			fmt.Printf("nodeName: v%, status: %v", node.GetName(), node.GetCreationTimestamp())
+			//node1[node.ClusterName] = node.Name
+
+			//nodes["name"] = node.GetName()
+			//nodes["namespaces"] = node.Namespace
+			//nodes["clusterName"] = node.GetClusterName()
+			//nodes["ResourceVersion"] = node.GetResourceVersion()
+			//nodes["APIVersion"] = node.APIVersion
+			//nodes["Kind"] = node.Kind
+			nodes = append(nodes, node.GetName())
+
+		}
+
+		return c.JSON(http.StatusOK, &nodes)
 	}
+}
 
-	result := &corev1.PodList{}
-	if err := restClient.
-		Get().
-		Namespace("kube-system").
-		Resource("pods").
-		VersionedParams(&metav1.ListOptions{Limit: 500}, scheme.ParameterCodec).
-		Do(context.TODO()).
-		Into(result); err != nil {
-		panic(err)
+func ListConfigMap(clientSet *kubernetes.Clientset) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		var configMaps []string
+
+		configMapList, err := clientSet.CoreV1().ConfigMaps("").List(context.TODO(), metav1.ListOptions{})
+		//configMapList, err := clientSet.CoreV1().ConfigMap().List(context.TODO(), metav1.ListOptions{})
+		if err != nil {
+			return err
+		}
+		fmt.Println(configMapList)
+		for _, configMap := range configMapList.Items {
+			fmt.Printf("nodeName: v%, status: %v", configMap.GetName(), configMap.GetCreationTimestamp())
+
+			//nodes["name"] = node.GetName()
+			//nodes["namespaces"] = node.Namespace
+			//nodes["clusterName"] = node.GetClusterName()
+			//nodes["ResourceVersion"] = node.GetResourceVersion()
+			//nodes["APIVersion"] = node.APIVersion
+			//nodes["Kind"] = node.Kind
+			configMaps = append(configMaps, configMap.GetName())
+
+		}
+
+		return c.JSON(http.StatusOK, &configMaps)
 	}
+}
 
-	fmt.Println("Print all listed pods.")
+func ListServices(clientSet *kubernetes.Clientset) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		var services []string
 
-	// 打印所有获取到的pods资源，输出到标准输出
-	for _, d := range result.Items {
-		fmt.Printf("NAMESPACE: %v NAME: %v \t STATUS: %v \n", d.Namespace, d.Name, d.Status.Phase)
+		servicesList, err := clientSet.CoreV1().Services("").List(context.TODO(), metav1.ListOptions{})
+		//configMapList, err := clientSet.CoreV1().ConfigMap().List(context.TODO(), metav1.ListOptions{})
+		if err != nil {
+			return err
+		}
+		fmt.Println(servicesList)
+		for _, service := range servicesList.Items {
+			fmt.Printf("nodeName: v%, status: %v", service.GetName(), service.GetCreationTimestamp())
+
+			services = append(services, service.GetName())
+
+		}
+
+		return c.JSON(http.StatusOK, &services)
+	}
+}
+
+func ListSecrets(clientSet *kubernetes.Clientset) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		var secretses []string
+
+		secretsList, err := clientSet.CoreV1().Secrets("").List(context.TODO(), metav1.ListOptions{})
+		//configMapList, err := clientSet.CoreV1().ConfigMap().List(context.TODO(), metav1.ListOptions{})
+		if err != nil {
+			return err
+		}
+		fmt.Println(secretsList)
+		for _, secrets := range secretsList.Items {
+			fmt.Printf("nodeName: v%, status: %v", secrets.GetName(), secrets.GetCreationTimestamp())
+
+			secretses = append(secretses, secrets.GetName())
+
+		}
+
+		return c.JSON(http.StatusOK, &secretses)
 	}
 }
