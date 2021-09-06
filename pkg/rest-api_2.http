@@ -2,5 +2,9 @@ GET http://localhost:80/api/item?id=99
 Accept: application/json
 
 ###
-GET http://127.0.0.1:2021
+GET http://127.0.0.1:2022
+Accept: application/json
+
+###
+GET http://127.0.0.1:2022/pods
 Accept: application/json
